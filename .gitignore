@@ -1,0 +1,23 @@
+# CRITICAL - Never commit secrets
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
