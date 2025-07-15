@@ -1,28 +1,10 @@
 # exprezzzo-power
 
+PowerUI backend API.
 
+- API runs on http://localhost:3001
+- Health check: /api/health
+- Auth: /api/auth/register, /api/auth/login
+- Metrics: /api/metrics/current
 
-\# Exprezzzo Power Backend
-
-
-
-\## Quick Start
-
-
-
-1\. Copy .env.local.example to .env.local and fill out your secrets
-
-2\. npm install
-
-3\. npm run dev
-
-
-
-API will be at http://localhost:3001/api/health
-
-
-
----
-
-
-
+See docs for setup!
