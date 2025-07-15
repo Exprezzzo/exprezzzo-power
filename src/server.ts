@@ -2,22 +2,26 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 
-const app = express();
+// Import routes
+import authRoutes from './api/routes/auth';
+import metricsRoutes from './api/routes/metrics';
+// Add other route imports as needed
 
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- Example Health Check Route ---
+// Example Health Check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'PowerUI API is running!' });
 });
 
-// --- Example Placeholder Route ---
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Test endpoint works!' });
-});
+// Mount routes
+app.use('/api/auth', authRoutes);
+app.use('/api/metrics', metricsRoutes);
+// Add any other routers (e.g., /api/usage, /api/integrations, etc.)
 
-// --- 404 Handler ---
+// 404 Handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
