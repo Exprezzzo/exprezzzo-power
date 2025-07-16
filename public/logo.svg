@@ -1,0 +1,16 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red Lightning -->
+  <path d="M20 5 L30 25 L22 25 L32 45 L15 20 L23 20 Z" fill="#ef4444" opacity="0.9">
+    <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" repeatCount="indefinite"/>
+  </path>
+  <!-- Blue Lightning -->
+  <path d="M50 5 L60 25 L52 25 L62 45 L45 20 L53 20 Z" fill="#3b82f6" opacity="0.9">
+    <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" begin="0.5s" repeatCount="indefinite"/>
+  </path>
+  <!-- Purple Lightning -->
+  <path d="M80 5 L90 25 L82 25 L92 45 L75 20 L83 20 Z" fill="#a855f7" opacity="0.9">
+    <animate attributeName="opacity" values="0.9;1;0.9" dur="2s" begin="1s" repeatCount="indefinite"/>
+  </path>
+  <!-- Text -->
+  <text x="110" y="35" font-family="Arial Black" font-size="24" font-weight="900" fill="#000">POWER</text>
+</svg>
