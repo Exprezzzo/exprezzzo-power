@@ -1,60 +1,82 @@
-﻿'use client';
-import { useState } from 'react';
+// components/PaymentButton.tsx
+// Assuming this is a client component as it uses useRouter and state if any.
 
-const config = {
-  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
-  STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder'
-};
+'use client'; // Ensure this is present if it uses client-side hooks
 
-export function PaymentButton() {
-  const [loading, setLoading] = useState(false);
+import { useRouter } from 'next/navigation'; // Assuming Next.js App Router
+import { loadStripe } from '@stripe/stripe-js'; // Make sure @stripe/stripe-js is installed: npm install @stripe/stripe-js
+
+// Make sure NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is set in .env.local AND Vercel
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string);
+
+interface PaymentButtonProps {
+  priceId: string; // The Stripe Price ID for the $99/mo plan
+  userId?: string; // Optional: User's ID from your auth system (e.g., Firebase UID)
+  userEmail?: string; // Optional: User's email
+  buttonText?: string;
+}
+
+export default function PaymentButton({ priceId, userId, userEmail, buttonText = "Get Power Access - $99/mo" }: PaymentButtonProps) {
+  const router = useRouter(); // If you use useRouter for redirects
 
   const handleCheckout = async () => {
-    setLoading(true);
     try {
-      const res = await fetch(`${config.API_URL}/api/stripe/create-checkout-session`, {
+      const stripe = await stripePromise;
+
+      if (!stripe) {
+        console.error('Stripe.js failed to load.');
+        return;
+      }
+
+      // Call your new Next.js API route
+      const response = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          priceId: 'price_1PgJHPGBnsaQSoj8jHiSdDhC', // Replace with your Price ID
-          userId: 'user123',
-          email: 'user@example.com'
-        })
+          priceId: priceId,
+          quantity: 1, // Or dynamically set quantity
+          userId: userId,
+          userEmail: userEmail,
+          // successUrl: `${window.location.origin}/success`, // Can be sent from client or handled by API route env var
+          // cancelUrl: `${window.location.origin}/cancel`,
+        }),
       });
-      const { url } = await res.json();
-      if (url) window.location.href = url;
-    } catch (err) {
-      alert('Checkout error! Make sure backend is running.');
-    } finally {
-      setLoading(false);
+
+      const session = await response.json();
+
+      if (response.ok && session.url) {
+        // Redirect to Stripe Checkout hosted page
+        router.push(session.url); // Use router.push for Next.js navigation
+        // OR window.location.href = session.url;
+      } else {
+        console.error('Failed to create Stripe Checkout Session:', session.error);
+        alert('Payment system temporarily unavailable. Please try again later.'); // User-friendly message
+      }
+    } catch (error) {
+      console.error('Error during checkout process:', error);
+      alert('An unexpected error occurred during payment. Please try again.');
     }
   };
 
   return (
-    <button 
-      onClick={handleCheckout} 
-      disabled={loading}
-      className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-black transition-all duration-200 bg-gradient-to-r from-green-400 to-green-600 rounded-lg hover:from-green-500 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+    <button
+      onClick={handleCheckout}
+      // Add your button styling here, e.g., from your design brief:
+      style={{
+        width: '100%',
+        padding: '16px',
+        fontSize: '18px',
+        background: '#22c55e', // Example green from your prompt
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        cursor: 'pointer',
+        fontWeight: 'bold'
+      }}
     >
-      <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-gray-900"></span>
-      <span className="absolute inset-0 w-full h-full rounded-lg shadow-lg bg-gradient-to-r from-green-400 to-green-600 animate-pulse"></span>
-      <span className="relative flex items-center">
-        {loading ? (
-          <>
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing...
-          </>
-        ) : (
-          <>
-            <span className="mr-2">⚡</span>
-            Get Power Access - $99/mo
-            <span className="ml-2">→</span>
-          </>
-        )}
-      </span>
+      {buttonText}
     </button>
   );
 }
