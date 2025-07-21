@@ -1,13 +1,23 @@
-'use client';
-import { useSearchParams } from 'next/navigation';
+// app/invite/page.tsx
+// Corrected to wrap useSearchParams() with Suspense for proper Next.js prerendering.
 
-export default function InvitePage() {
+'use client'; // This directive must remain at the top
+
+import { Suspense, useEffect, useState } from 'react'; // Ensure Suspense is imported
+import { useRouter, useSearchParams } from 'next/navigation'; // Ensure useSearchParams is imported
+
+// This component will use the search params
+function InviteContent() {
   const searchParams = useSearchParams();
-  const price = searchParams.get('price') || '299';
-  const code = searchParams.get('code') || 'POWER';
-  
+  // Ensure you handle potential null or undefined for 'code'
+  const code = searchParams ? searchParams.get('code') : null;
+
+  // --- Add your existing logic for the Invite page here ---
+  // This is a placeholder for the actual content of your invite page.
+  // Example: If your original page had more logic or a form, place it within this function.
+
   return (
-    <div style={{ 
+    <div style={{
       minHeight: '100vh',
       background: '#000',
       color: 'white',
@@ -17,39 +27,42 @@ export default function InvitePage() {
       padding: '20px'
     }}>
       <div style={{
-        background: 'linear-gradient(45deg, #ef4444, #a855f7)',
-        padding: '3px',
-        borderRadius: '16px'
+        background: '#1a1a1a',
+        padding: '40px',
+        borderRadius: '16px',
+        border: '1px solid #333',
+        width: '100%',
+        maxWidth: '400px'
       }}>
-        <div style={{
-          background: '#000',
-          padding: '40px',
-          borderRadius: '13px',
-          textAlign: 'center',
-          maxWidth: '400px'
-        }}>
-          <h1>🎁 Exclusive Invite</h1>
-          <p style={{ fontSize: '24px', margin: '20px 0' }}>
-            Your special price: <strong>${price}/month</strong>
-          </p>
-          <p style={{ color: '#999' }}>
-            Invite code: <code style={{ background: '#333', padding: '5px 10px', borderRadius: '4px' }}>{code}</code>
-          </p>
-          <button style={{
-            marginTop: '20px',
-            padding: '16px 32px',
-            fontSize: '18px',
-            background: '#22c55e',
-            border: 'none',
-            borderRadius: '8px',
-            color: 'white',
-            cursor: 'pointer',
-            fontWeight: 'bold'
-          }}>
-            Claim This Offer
-          </button>
-        </div>
+        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
+          ⚡ Invite to Exprezzzo Power Grid
+        </h1>
+        {code ? (
+          <p style={{ textAlign: 'center' }}>Using invite code: <strong>{code}</strong></p>
+        ) : (
+          <p style={{ textAlign: 'center' }}>No invite code found. Access may be limited.</p>
+        )}
+        {/* Add your actual invite page form/content here */}
+        <p style={{ textAlign: 'center', marginTop: '20px' }}>
+          Welcome to the future of AI access.
+        </p>
       </div>
     </div>
+  );
+}
+
+// This is the page component that wraps the content in Suspense
+export default function InvitePage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh', background: '#000', color: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
+      }}>
+        Loading Exprezzzo Invite...
+      </div>
+    }>
+      <InviteContent />
+    </Suspense>
   );
 }

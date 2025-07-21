@@ -1,3 +1,5 @@
+import './globals.css'  // ADD THIS LINE AT THE TOP!
+
 export const metadata = {
   title: 'Exprezzzo Power - One API for All AI',
   description: 'Save 40% on AI API costs with intelligent routing',
