@@ -39,3 +39,4 @@ Thumbs.db
 # Backend build
 backend/dist/
 backend/.env.local
+.vercel

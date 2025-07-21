@@ -1,3 +1,5 @@
+// --- Start of updated code for app/login/page.tsx ---
+
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,10 +11,12 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simple password check (replace with real auth later)
-    if (password === 'power123') {
-      // Set a simple session flag
+
+    // TEMPORARY SECURITY FIX: Replaced hardcoded password with environment variable.
+    // WARNING: NEXT_PUBLIC_ADMIN_PASSWORD_TEMP is still exposed in the client-side bundle.
+    // This is a temporary measure until proper Firebase Admin SDK authentication is implemented.
+    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD_TEMP) {
+      // Set a simple session flag (still temporary, will be replaced with secure JWT)
       localStorage.setItem('adminAuth', 'true');
       router.push('/admin');
     } else {
@@ -40,7 +44,7 @@ export default function LoginPage() {
         <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
           ⚡ Admin Login
         </h1>
-        
+
         <form onSubmit={handleLogin}>
           <input
             type="password"
@@ -59,11 +63,11 @@ export default function LoginPage() {
               boxSizing: 'border-box'
             }}
           />
-          
+
           {error && (
             <p style={{ color: '#ef4444', marginBottom: '20px' }}>{error}</p>
           )}
-          
+
           <button
             type="submit"
             style={{
@@ -81,16 +85,19 @@ export default function LoginPage() {
             Login to Power Grid
           </button>
         </form>
-        
-        <p style={{ 
-          textAlign: 'center', 
-          marginTop: '20px', 
+
+        {/* Removed the hardcoded default password display here */}
+        {/* <p style={{
+          textAlign: 'center',
+          marginTop: '20px',
           color: '#666',
           fontSize: '14px'
         }}>
           Default password: power123
-        </p>
+        </p> */}
       </div>
     </div>
   );
 }
+
+// --- End of updated code for app/login/page.tsx ---
