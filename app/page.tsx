@@ -39,7 +39,7 @@ export default function HomePage() { // Renamed from 'Home' if your file was jus
 
         {/* Render the PaymentButton */}
         <div style={{ maxWidth: '300px', margin: '0 auto' }}>
-          <PaymentButton priceId="price_1PgJHPGBnsaQSoj8jHiSdDhC" /> {/* Use your actual Stripe Price ID */}
+          <PaymentButton priceId="price_1PgJHPGBnsaQSoj8jHiDhC" /> {/* Use your actual Stripe Price ID */}
         </div>
 
         {/* Add more sections for Features, Testimonials, FAQ, etc. */}

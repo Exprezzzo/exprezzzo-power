@@ -1,25 +1,27 @@
 // app/layout.tsx
-// Corrected to import globals.css for styling.
+// Corrected to eliminate whitespace issues around <html> and <body> tags.
+// Ensure you replace the ENTIRE FILE content with this.
 
-import './globals.css'; // ADD THIS LINE AT THE VERY TOP!
+import './globals.css'; // This import should be at the very top.
 
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // Assuming you use Inter font
+import { Inter } from 'next/font/google';
 
-// Assuming you have AuthProvider, FirebaseInit, PWAPrompt components
-// based on previous analysis. If not, remove these imports for now.
+// If you have these components/contexts in your project, ensure their imports are here.
+// Otherwise, you can remove these comments and the commented-out usage in the JSX below.
 // import { AuthProvider } from '@/context/AuthContext';
 // import { FirebaseInit } from '@/components/FirebaseInit';
-// import { PWAPrompt } from '@/components/PWAPrompt'; // If you have this PWA component
+// import { PWAPrompt } from '@/components/PWAPrompt';
 
-const inter = Inter({ subsets: ['latin'] }); // If using Inter font
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Exprezzzo Power - One API for All AI',
   description: 'Save 40% on AI API costs with intelligent routing for LLMs.',
 };
 
-// If you are making this a PWA, you might also need this:
+// If you are making this a PWA and want to define viewport metadata:
+// import type { Viewport } from 'next';
 // export const viewport: Viewport = {
 //   themeColor: '#000000',
 // };
@@ -30,9 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.className}> {/* Use inter.className if using Inter font */}
-      <body style={{ margin: 0, padding: 0 }}>
-        {/* Wrap children with AuthProvider, FirebaseInit, etc. if you have them */}
+    <html lang="en" className={inter.className}>
+      <body>
+        {/* If you have global context providers, wrap children here: */}
         {/* <AuthProvider> */}
           {/* <FirebaseInit /> */}
           {children}

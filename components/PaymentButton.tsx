@@ -1,34 +1,46 @@
 // components/PaymentButton.tsx
-// Assuming this is a client component as it uses useRouter and state if any.
+// Corrected to add a runtime check for the Stripe publishable key.
 
-'use client'; // Ensure this is present if it uses client-side hooks
+'use client';
 
-import { useRouter } from 'next/navigation'; // Assuming Next.js App Router
-import { loadStripe } from '@stripe/stripe-js'; // Make sure @stripe/stripe-js is installed: npm install @stripe/stripe-js
+import { useRouter } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import React from 'react';
 
-// Make sure NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is set in .env.local AND Vercel
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string);
+// Get the publishable key from environment variables
+const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+// Conditionally load Stripe.js ONLY if the key is available
+const stripePromise = STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(STRIPE_PUBLISHABLE_KEY)
+  : null; // Set to null if key is missing
 
 interface PaymentButtonProps {
-  priceId: string; // The Stripe Price ID for the $99/mo plan
-  userId?: string; // Optional: User's ID from your auth system (e.g., Firebase UID)
-  userEmail?: string; // Optional: User's email
+  priceId: string;
+  userId?: string;
+  userEmail?: string;
   buttonText?: string;
 }
 
-export default function PaymentButton({ priceId, userId, userEmail, buttonText = "Get Power Access - $99/mo" }: PaymentButtonProps) {
-  const router = useRouter(); // If you use useRouter for redirects
+export default function PaymentButton({ priceId, userId, userEmail, buttonText = "Get Power Access — $99/mo" }: PaymentButtonProps) {
+  const router = useRouter();
 
   const handleCheckout = async () => {
     try {
-      const stripe = await stripePromise;
-
-      if (!stripe) {
-        console.error('Stripe.js failed to load.');
+      if (!STRIPE_PUBLISHABLE_KEY) {
+        console.error('Stripe Publishable Key is missing from environment variables.');
+        alert('Payment system configuration error. Please contact support.');
         return;
       }
 
-      // Call your new Next.js API route
+      const stripe = await stripePromise; // Await the promise only if it's not null
+
+      if (!stripe) {
+        console.error('Stripe.js failed to load, even with a key. Check console for details.');
+        alert('Payment system is not available. Please try again later.');
+        return;
+      }
+
       const response = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
         headers: {
@@ -36,26 +48,22 @@ export default function PaymentButton({ priceId, userId, userEmail, buttonText =
         },
         body: JSON.stringify({
           priceId: priceId,
-          quantity: 1, // Or dynamically set quantity
-          userId: userId,
-          userEmail: userEmail,
-          // successUrl: `${window.location.origin}/success`, // Can be sent from client or handled by API route env var
-          // cancelUrl: `${window.location.origin}/cancel`,
+          quantity: 1,
+          userId: userId || 'anonymous',
+          userEmail: userEmail || 'anonymous@example.com',
         }),
       });
 
       const session = await response.json();
 
       if (response.ok && session.url) {
-        // Redirect to Stripe Checkout hosted page
-        router.push(session.url); // Use router.push for Next.js navigation
-        // OR window.location.href = session.url;
+        router.push(session.url);
       } else {
-        console.error('Failed to create Stripe Checkout Session:', session.error);
-        alert('Payment system temporarily unavailable. Please try again later.'); // User-friendly message
+        console.error('Failed to create Stripe Checkout Session:', session.error || session.details);
+        alert('Payment system temporarily unavailable. Please check console for details.');
       }
     } catch (error) {
-      console.error('Error during checkout process:', error);
+      console.error('An unexpected error occurred during checkout:', error);
       alert('An unexpected error occurred during payment. Please try again.');
     }
   };
@@ -63,12 +71,11 @@ export default function PaymentButton({ priceId, userId, userEmail, buttonText =
   return (
     <button
       onClick={handleCheckout}
-      // Add your button styling here, e.g., from your design brief:
       style={{
         width: '100%',
         padding: '16px',
         fontSize: '18px',
-        background: '#22c55e', // Example green from your prompt
+        background: '#22c55e',
         border: 'none',
         borderRadius: '8px',
         color: 'white',
