@@ -10,11 +10,9 @@
   },
   "dependencies": {
     "@stripe/stripe-js": "latest",
-    "@supabase/supabase-js": "^2.52.0",
     "firebase": "^10.12.3",
     "firebase-admin": "^12.3.0",
-    "groq-sdk": "^0.27.0",
-    "next": "^15.4.2",
+    "next": "^14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "stripe": "^16.5.0"
@@ -25,7 +23,7 @@
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.14",
     "eslint": "^8",
-    "eslint-config-next": "14.2.30",
+    "eslint-config-next": "14.2.5",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
