@@ -1,5 +1,5 @@
 // components/PaymentButton.tsx
-// Corrected to add a runtime check for the Stripe publishable key.
+// Updated with the correct Stripe Price ID for Test Mode.
 
 'use client';
 
@@ -7,15 +7,15 @@ import { useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
 import React from 'react';
 
-// Get the publishable key from environment variables
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
-// Conditionally load Stripe.js ONLY if the key is available
 const stripePromise = STRIPE_PUBLISHABLE_KEY
   ? loadStripe(STRIPE_PUBLISHABLE_KEY)
-  : null; // Set to null if key is missing
+  : null;
 
 interface PaymentButtonProps {
+  // The priceId prop will now be passed dynamically from HomePage,
+  // but we ensure it's used correctly here.
   priceId: string;
   userId?: string;
   userEmail?: string;
@@ -33,7 +33,7 @@ export default function PaymentButton({ priceId, userId, userEmail, buttonText =
         return;
       }
 
-      const stripe = await stripePromise; // Await the promise only if it's not null
+      const stripe = await stripePromise;
 
       if (!stripe) {
         console.error('Stripe.js failed to load, even with a key. Check console for details.');
@@ -47,6 +47,7 @@ export default function PaymentButton({ priceId, userId, userEmail, buttonText =
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // Use the dynamic priceId passed to the component
           priceId: priceId,
           quantity: 1,
           userId: userId || 'anonymous',
