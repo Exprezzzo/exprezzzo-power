@@ -1,10 +1,10 @@
 // postcss.config.js
-// Confirmed for use with tailwindcss@3.3.0, postcss@8.4.31, autoprefixer@10.4.14
-// Assumes @tailwindcss/postcss is NOT installed (or explicitly uninstalled).
+// Corrected format for Next.js 14.2.x - uses 'plugins' as an object.
+// This should resolve the "PostCSS Plugin was passed as a function... must be provided as a string" error.
 
 module.exports = {
-  plugins: {
-    tailwindcss: {}, // Use the standard tailwindcss plugin
+  plugins: { // This format is correct for Next.js 14.x
+    tailwindcss: {},
     autoprefixer: {},
   },
 };

@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@stripe/stripe-js": "latest",
+    "@supabase/supabase-js": "^2.44.3",
     "firebase": "^10.12.3",
     "firebase-admin": "^12.3.0",
+    "groq-sdk": "^0.5.0",
     "next": "^14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
