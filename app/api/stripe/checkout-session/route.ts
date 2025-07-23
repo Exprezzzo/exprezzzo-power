@@ -1,5 +1,5 @@
 // app/api/stripe/checkout-session/route.ts
-// Corrected: Ensure success_url and cancel_url have explicit 'https://' scheme.
+// Corrected: Uses dynamic price creation (price_data) instead of a pre-defined Stripe Price ID.
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
@@ -11,50 +11,55 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { priceId, quantity = 1, userId, userEmail } = await req.json();
+    // userId and email might come from your frontend if user is logged in
+    const { userId, email } = await req.json();
 
-    // --- Basic Input Validation (IMPORTANT for security) ---
-    if (!priceId || typeof priceId !== 'string') {
-      return NextResponse.json({ error: 'Invalid priceId provided' }, { status: 400 });
-    }
-    if (quantity <= 0) {
-      return NextResponse.json({ error: 'Quantity must be positive' }, { status: 400 });
-    }
+    // --- Basic Input Validation ---
+    // (Optional: You can add more checks for userId/email if needed)
 
-    // --- DEFINITIVE FIX FOR THE INVALID URL ERROR ---
     // Construct the base URL using headers for reliability in Vercel serverless environment.
-    // 'x-forwarded-proto' gives 'http' or 'https', 'host' gives the domain.
     const scheme = req.headers.get('x-forwarded-proto') || 'https'; // Default to https
     const host = req.headers.get('host');
 
-    // Check if host is available and construct base URL
     let deployedBaseUrl;
     if (host) {
       deployedBaseUrl = `${scheme}://${host}`;
     } else if (process.env.VERCEL_URL) {
-      // Fallback to VERCEL_URL environment variable if headers are somehow missing (unlikely in Vercel)
       deployedBaseUrl = `https://${process.env.VERCEL_URL}`;
     } else {
-      // Last resort fallback for local development if nothing else is available
-      deployedBaseUrl = 'http://localhost:3000';
+      deployedBaseUrl = 'http://localhost:3000'; // Fallback for local development
       console.warn("Using localhost for base URL - ensure this is only for local dev.");
     }
 
     const successUrl = `${deployedBaseUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${deployedBaseUrl}/cancel`;
 
+    // --- KEY CHANGE: Use price_data for dynamic price creation ---
     const session = await stripe.checkout.sessions.create({
       line_items: [
         {
-          price: priceId,
-          quantity: quantity,
+          price_data: { // Define the price directly here
+            currency: 'usd',
+            product_data: {
+              name: 'Exprezzzo Power User Access', // Name of your product
+              description: 'Premium access to all Exprezzzo AI features ($97/month)', // Product description
+              images: [`${deployedBaseUrl}/ExprezzzoLogo.png`], // Optional: URL to your product image (ensure it's in /public)
+            },
+            unit_amount: 9700, // Price in cents: $97.00
+            recurring: {
+              interval: 'month', // Monthly subscription
+            },
+          },
+          quantity: 1,
         },
       ],
-      mode: 'subscription', // or 'payment'
+      mode: 'subscription', // This must be 'subscription' for recurring payments
       success_url: successUrl,
       cancel_url: cancelUrl,
-      customer_email: userEmail,
-      client_reference_id: userId,
+      customer_email: email, // Pre-fill email if provided
+      client_reference_id: userId, // Link to your internal user ID
+      allow_promotion_codes: true, // Allow promo codes
+      // Add any other necessary Stripe Checkout Session parameters as needed
     });
 
     return NextResponse.json({ sessionId: session.id, url: session.url }, { status: 200 });
