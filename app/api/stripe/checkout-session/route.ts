@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
               description: 'Premium access to all Exprezzzo AI features ($97/month)', // Product description
               images: [`${deployedBaseUrl}/ExprezzzoLogo.png`], // Optional: URL to your product image (ensure it's in /public)
             },
-            unit_amount: 9700, // Price in cents: $97.00
+            unit_amount: 100, // Price in cents: $1.00
             recurring: {
               interval: 'month', // Monthly subscription
             },
