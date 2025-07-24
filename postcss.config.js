@@ -1,6 +1,6 @@
 // postcss.config.js
-// Corrected format for Next.js 14.2.x - uses 'plugins' as an object.
-// This should resolve the "PostCSS Plugin was passed as a function... must be provided as a string" error.
+// Corrected format for Next.js 14.2.5 - uses 'plugins' as an object.
+// This format should be fully compatible and resolve PostCSS errors for Next.js 14.x.
 
 module.exports = {
   plugins: { // This format is correct for Next.js 14.x
