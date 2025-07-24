@@ -1,5 +1,4 @@
 // app/success/page.tsx
-// Corrected: Wrapped content using useSearchParams() with Suspense for proper prerendering.
 
 'use client'; // This is a client component
 
@@ -20,9 +19,13 @@ function SuccessContent() {
       console.log('Stripe Session ID:', sessionId);
       // In a real app, you might:
       // 1. Make an API call here to your own backend to verify this session server-side
+      //    (This provides an extra layer of security and updates your DB if webhook fails)
       // 2. Redirect to a user dashboard after a short delay: setTimeout(() => router.push('/dashboard'), 3000);
     } else {
       setMessage('Payment verification in progress or no session ID found. Please check your email.');
+      // If no session ID, it might be a direct visit or an issue.
+      // Consider redirecting to homepage or a generic error page.
+      // router.push('/');
     }
   }, [searchParams]);
 
