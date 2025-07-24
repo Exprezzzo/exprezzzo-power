@@ -1,42 +1,73 @@
-﻿# Dependencies
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Diagnostic reports (https://nodejs.org/api/cli.html#cli_--diagnostic_report_directory)
+.report/
+
+# Runtime data
+*.cjs
+*.mjs
+*.js
+*.d.ts
+*.tsbuildinfo
+*.map
+
+# Dependency directories
 node_modules/
-.pnp
-.pnp.js
+jspm_packages/
 
-# Next.js
-.next/
-out/
-build/
-dist/
+# TypeScript cache
+*.tsbuildinfo
 
-# Environment files (SECRETS!)
+# Optional npm cache directory
+.npm/
+
+# Optional eslint cache
+.eslintcache
+
+# Optional Prettier cache
+.prettiercache
+
+# Compiled output
+/dist
+/build
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.bak
+
+# dotenv environment variables file
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Firebase
-.firebase/
-firebase-debug.log
+# Next.js build output
+.next/
+/out/
+.turbo/
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Vercel
+.vercel/
 
-# OS
-.DS_Store
-Thumbs.db
+# Firebase Admin Service Account Key (if not in .env.local)
+# service-account.json
 
-# IDE
-.vscode/
-.idea/
+# Thumbnails for Visual Studio Code (if present)
+.vscode-test/
 
-# TypeScript
-*.tsbuildinfo
-
-# Backend build
-backend/dist/
-backend/.env.local
-.vercel
+# Other specific files you want to ignore
+# Example: if you have a backend folder and don't want its node_modules committed
+# backend/node_modules/
