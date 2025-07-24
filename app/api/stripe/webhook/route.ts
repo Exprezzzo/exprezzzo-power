@@ -1,9 +1,9 @@
 // app/api/stripe/webhook/route.ts
-// Updated: Imports 'admin' namespace from lib/firebaseAdmin.ts for FieldValue access.
+// Updated: Adds handling for 'customer.subscription.created' event.
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db, admin } from '@/lib/firebaseAdmin'; // Updated: Import 'admin' here
+import { db, admin } from '@/lib/firebaseAdmin'; // Ensure 'admin' is imported
 
 // Initialize Stripe with the Secret Key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         const userEmail = checkoutSession.customer_details?.email;
 
         if (userId && userEmail) {
-          const userRef = db.collection('users').doc(userId); // Use db from firebaseAdmin
+          const userRef = db.collection('users').doc(userId);
           await userRef.set({
             stripeCustomerId: checkoutSession.customer,
             subscriptionId: checkoutSession.subscription,
@@ -44,25 +44,32 @@ export async function POST(req: NextRequest) {
             plan: 'Founding',
             isPro: true,
             email: userEmail,
-            lastPaymentDate: admin.firestore.FieldValue.serverTimestamp(), // Now 'admin' is defined!
+            lastPaymentDate: admin.firestore.FieldValue.serverTimestamp(), // 'admin' now correctly referenced
           }, { merge: true });
           console.log(`[Firestore] User ${userId} (${userEmail}) granted Power Access.`);
-
-          // Optional: Send a welcome email via Resend (ensure RESEND_API_KEY is set in Vercel)
-          // if (process.env.RESEND_API_KEY) {
-          //   await fetch('https://api.resend.com/emails', {
-          //     method: 'POST',
-          //     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.RESEND_API_KEY}` },
-          //     body: JSON.stringify({ from: 'onboarding@exprezzzo.com', to: userEmail, subject: 'Welcome to Exprezzzo Power!', html: '<strong>Thanks for subscribing! Your power access is now active.</strong>', }),
-          //   });
-          // }
-
         } else {
           console.warn(`[Firestore] Missing client_reference_id or customer_details.email for checkout session ${checkoutSession.id}. User not updated.`);
         }
-
       } catch (updateError) {
         console.error(`[Firestore Error] Failed to update user or send email for ${checkoutSession.client_reference_id}:`, updateError);
+      }
+      break;
+
+    case 'customer.subscription.created': // ADDED THIS CASE
+      const subscriptionCreated = event.data.object as Stripe.Subscription;
+      console.log(`[Stripe Webhook] Subscription created: ${subscriptionCreated.id}. Status: ${subscriptionCreated.status}`);
+      // This event is often sent right after checkout.session.completed.
+      // You can use it to re-confirm subscription status or perform additional actions.
+      if (subscriptionCreated.customer && typeof subscriptionCreated.customer === 'string') {
+        const usersSnapshot = await db.collection('users').where('stripeCustomerId', '==', subscriptionCreated.customer).limit(1).get();
+        if (!usersSnapshot.empty) {
+          await usersSnapshot.docs[0].ref.update({
+            subscriptionStatus: subscriptionCreated.status,
+            plan: subscriptionCreated.metadata?.plan_name || 'Founding',
+            // You might also update isPro: true here if not done by checkout.session.completed
+          });
+          console.log(`[Firestore] User ${usersSnapshot.docs[0].id} subscription status updated to ${subscriptionCreated.status}`);
+        }
       }
       break;
 
@@ -76,7 +83,7 @@ export async function POST(req: NextRequest) {
             subscriptionStatus: subscriptionUpdated.status,
             plan: subscriptionUpdated.metadata?.plan_name || 'Founding',
           });
-          console.log(`[Firestore] User ${usersSnapshot.docs[0].id} subscription status updated to ${subscriptionUpdated.status}`);
+          console.log(`[Firestore] User ${usersSnapshot.docs[0].id} subscription status updated to ${usersSnapshot.docs[0].data().email} to ${subscriptionUpdated.status}`);
         }
       }
       break;
