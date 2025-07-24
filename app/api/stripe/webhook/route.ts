@@ -1,13 +1,13 @@
 // app/api/stripe/webhook/route.ts
-// Updated to use the new lib/firebaseAdmin.ts for Firebase Admin SDK.
+// Updated: Imports 'admin' namespace from lib/firebaseAdmin.ts for FieldValue access.
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/lib/firebaseAdmin'; // Import Firestore from your new utility
+import { db, admin } from '@/lib/firebaseAdmin'; // Updated: Import 'admin' here
 
 // Initialize Stripe with the Secret Key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2024-04-10', // Use your Stripe API version
+  apiVersion: '2024-04-10', // Use your Stripe API version (check your Stripe dashboard)
 });
 
 // Webhook signing secret from your Stripe Dashboard
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         const userEmail = checkoutSession.customer_details?.email;
 
         if (userId && userEmail) {
-          const userRef = db.collection('users').doc(userId);
+          const userRef = db.collection('users').doc(userId); // Use db from firebaseAdmin
           await userRef.set({
             stripeCustomerId: checkoutSession.customer,
             subscriptionId: checkoutSession.subscription,
@@ -44,14 +44,25 @@ export async function POST(req: NextRequest) {
             plan: 'Founding',
             isPro: true,
             email: userEmail,
-            lastPaymentDate: admin.firestore.FieldValue.serverTimestamp(), // Use admin.firestore.FieldValue
+            lastPaymentDate: admin.firestore.FieldValue.serverTimestamp(), // Now 'admin' is defined!
           }, { merge: true });
           console.log(`[Firestore] User ${userId} (${userEmail}) granted Power Access.`);
+
+          // Optional: Send a welcome email via Resend (ensure RESEND_API_KEY is set in Vercel)
+          // if (process.env.RESEND_API_KEY) {
+          //   await fetch('https://api.resend.com/emails', {
+          //     method: 'POST',
+          //     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.RESEND_API_KEY}` },
+          //     body: JSON.stringify({ from: 'onboarding@exprezzzo.com', to: userEmail, subject: 'Welcome to Exprezzzo Power!', html: '<strong>Thanks for subscribing! Your power access is now active.</strong>', }),
+          //   });
+          // }
+
         } else {
           console.warn(`[Firestore] Missing client_reference_id or customer_details.email for checkout session ${checkoutSession.id}. User not updated.`);
         }
+
       } catch (updateError) {
-        console.error(`[Firestore Error] Failed to update user for ${checkoutSession.client_reference_id}:`, updateError);
+        console.error(`[Firestore Error] Failed to update user or send email for ${checkoutSession.client_reference_id}:`, updateError);
       }
       break;
 

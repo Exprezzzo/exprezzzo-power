@@ -1,10 +1,9 @@
 // lib/firebaseAdmin.ts
-// Updated for Vercel build-time resilience.
-// Firebase Admin SDK will now mock itself during Vercel's build process if credentials are not present.
+// Updated: Now explicitly exports the 'admin' namespace for FieldValue access.
 
 import "server-only"; // Ensures this module is never bundled client-side.
 
-import * as admin from 'firebase-admin';
+import * as admin from 'firebase-admin'; // Keep this import
 
 // A simple mock for Firebase Admin services during Vercel build.
 const mockFirestore = {
@@ -35,7 +34,8 @@ export function getFirebaseAdminApp() {
     console.warn('Firebase Admin: Detecting Vercel build environment without full credentials. Returning mock for build process.');
     return {
       firestore: () => mockFirestore,
-    } as unknown as admin.app.App;
+      // Add other mocked services if needed, e.g., auth: () => mockAuth
+    } as unknown as admin.app.App; // Cast to bypass TypeScript errors for runtime type
   }
 
   if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
@@ -59,4 +59,7 @@ export function getFirebaseAdminApp() {
   }
 }
 
+// Export Firestore and the 'admin' namespace for FieldValue access
 export const db = getFirebaseAdminApp().firestore();
+export { admin }; // ADD THIS LINE: Explicitly export the 'admin' namespace
+// export const authAdmin = getFirebaseAdminApp().auth(); // Example: if you need Auth Admin
