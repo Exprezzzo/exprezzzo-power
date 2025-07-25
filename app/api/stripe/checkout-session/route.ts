@@ -1,9 +1,8 @@
 // app/api/stripe/checkout-session/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // For client-side Firestore
-import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Admin SDK
-// Removed: import { getAuth as getAdminAuth } from 'firebase-admin/auth'; // Not used in this file
+import { doc, getDoc, setDoc } from 'firebase/firestore'; // For client-side Firestore (types only)
+import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin'; // Import getAdminApp AND getAdminFirestore (for direct use)
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -12,38 +11,38 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { priceId, userId, userEmail } = await req.json(); // Expect userId and userEmail from frontend
+    const { priceId, userId, userEmail } = await req.json();
 
     if (!priceId) {
       return NextResponse.json({ error: 'Price ID is required.' }, { status: 400 });
     }
 
     const adminApp = getAdminApp(); // Get the Firebase Admin app instance
-    if (!adminApp) {
-      console.error("Checkout-session API: Firebase Admin App not initialized. Cannot create Stripe customer.");
+    const adminFirestore = getAdminFirestore(); // Use the safe getter for Firestore
+
+    if (!adminApp || !adminFirestore) { // Check both app and firestore are valid
+      console.error("Checkout-session API: Firebase Admin SDK not fully initialized. Cannot process.");
       return NextResponse.json({ error: "Server configuration error. Please try again later." }, { status: 500 });
     }
-    const adminFirestore = getFirestore(adminApp);
 
     let customerId: string | undefined;
 
     // If a userId is passed from an authenticated user, try to find/create their Stripe customer
     if (userId) {
-      const userRef = doc(adminFirestore, 'users', userId);
-      const userDoc = await getDoc(userRef);
+      const userRef = adminFirestore.collection('users').doc(userId); // Use adminFirestore here
+      const userDoc = await userRef.get();
 
-      if (userDoc.exists() && userDoc.data()?.stripeCustomerId) {
+      if (userDoc.exists && userDoc.data()?.stripeCustomerId) {
         customerId = userDoc.data().stripeCustomerId;
         console.log(`Using existing Stripe customer for user ${userId}: ${customerId}`);
       } else {
         // Create a new Stripe customer
         const customer = await stripe.customers.create({
-          email: userEmail || undefined, // Use email if provided
-          metadata: { firebaseUid: userId }, // Link to Firebase UID for webhook
+          email: userEmail || undefined,
+          metadata: { firebaseUid: userId },
         });
         customerId = customer.id;
-        // Save the new Stripe customer ID to Firestore
-        await setDoc(userRef, { stripeCustomerId: customer.id }, { merge: true });
+        await setDoc(userRef, { stripeCustomerId: customer.id }, { merge: true }); // Use adminFirestore here
         console.log(`Created new Stripe customer for user ${userId}: ${customerId}`);
       }
     } else if (userEmail) {
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
       } else {
         const customer = await stripe.customers.create({
           email: userEmail,
-          metadata: { guestEmail: userEmail } // Mark as guest for webhook
+          metadata: { guestEmail: userEmail }
         });
         customerId = customer.id;
         console.log(`Created new Stripe customer for guest email: ${customerId}`);
@@ -65,9 +64,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'User information missing for checkout.' }, { status: 400 });
     }
 
-
     // Construct dynamic success and cancel URLs
-    const host = req.headers.get('host'); // e.g., your-domain.vercel.app
+    const host = req.headers.get('host');
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
 
     const successUrl = `${protocol}://${host}/success?session_id={CHECKOUT_SESSION_ID}`;
@@ -75,23 +73,13 @@ export async function POST(req: NextRequest) {
 
     // Create the Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
-      customer: customerId, // Use the retrieved or newly created customer ID
+      customer: customerId,
       mode: 'subscription',
-      line_items: [
-        {
-          price: priceId, // The Stripe Price ID
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
-      allow_promotion_codes: true, // Allow promo codes if desired
-      // Pass metadata to the session for later retrieval in webhooks/success page
-      metadata: {
-        firebaseUid: userId || 'guest', // Pass 'guest' if not authenticated Firebase user
-        planType: plan, // Pass plan type from query param if available (though not used in client request)
-      },
-      // Prefill customer email if available
+      allow_promotion_codes: true,
+      metadata: { firebaseUid: userId || 'guest' },
       customer_email: userEmail || undefined,
     });
 
