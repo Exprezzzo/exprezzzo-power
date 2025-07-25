@@ -71,7 +71,7 @@ function InviteContent() {
 // Wrap the content that uses useSearchParams in Suspense
 export default function InvitePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading invite...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white"><p>Loading invite...</p></div>}>
       <InviteContent />
     </Suspense>
   );
