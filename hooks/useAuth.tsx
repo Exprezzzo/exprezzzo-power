@@ -3,8 +3,9 @@
 
 import { useState, useEffect, useContext, createContext } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, getFirestore, getApps, getApp, initializeFirestore } from 'firebase/firestore'; // Added getApps, getApp, initializeFirestore
-import { auth, firebaseApp as exportedFirebaseApp } from '@/lib/firebase'; // Attempt to import as exportedFirebaseApp, fallback if not explicitly exported
+import { getApps, getApp, initializeApp } from 'firebase/app'; // Correct import for getApps and getApp
+import { doc, onSnapshot, getFirestore } from 'firebase/firestore'; // Correct import for getFirestore
+import { auth, firebaseConfig } from '@/lib/firebase'; // Assuming firebaseConfig is exported, or modify as needed
 
 interface UserProfile {
   uid: string;
@@ -30,21 +31,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authenticatedUser) => {
       setFirebaseUser(authenticatedUser);
       if (authenticatedUser) {
-        // Ensure Firestore is initialized if not already
         let appInstance;
-        if (getApps().length === 0) {
-          // This case should ideally not happen if firebase.ts initializes the app,
-          // but as a fallback, ensure the app is initialized.
-          // This block might indicate an issue with firebase.ts's initialization being too late or not called.
-          // Assuming firebase.ts's default export handles it implicitly for `auth`, `db` etc.
-          // For explicit app instance, we rely on getApp() once initialized.
-          console.error("Firebase app not initialized when useAuth started. Check lib/firebase.ts initialization.");
+        // Ensure the Firebase app is initialized, if not already.
+        // This relies on `auth` being initialized which should also initialize the app.
+        if (!getApps().length) {
+          // Fallback if app is somehow not initialized, but typically auth import initializes it.
+          // You might need to import `initializeApp` from 'firebase/app' and call it here.
+          // For now, assume it's initialized by '@/lib/firebase'.
+          console.error("Firebase app not initialized when useAuth started. This is unexpected.");
           setLoading(false);
           setUser(null);
           return;
-        } else {
-          appInstance = getApp(); // Get the default initialized app
         }
+        appInstance = getApp(); // Get the default initialized app
 
         const db = getFirestore(appInstance); // Use the retrieved app instance
         const userDocRef = doc(db, 'users', authenticatedUser.uid);
@@ -66,6 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               isPro: false,
             });
             // Optionally, create the user document in Firestore if it doesn't exist
+            // import { setDoc } from 'firebase/firestore';
             // setDoc(userDocRef, { email: authenticatedUser.email, isPro: false }, { merge: true });
           }
           setLoading(false);
