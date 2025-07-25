@@ -112,7 +112,6 @@ export const signInWithGoogle = async (): Promise<User> => {
 
     return user;
   } catch (error) {
-    // Fallback to redirect if popup blocked, especially on mobile
     if ((error as AuthError).code === 'auth/popup-blocked') {
       await signInWithRedirect(auth, googleProvider);
     }
@@ -169,7 +168,7 @@ export const sendMagicLink = async (email: string): Promise<void> => {
 export const completeMagicLinkSignIn = async (email: string, url: string): Promise<User> => {
   try {
     if (!isSignInWithEmailLink(auth, url)) {
-      throw new Error('Invalid sign-in link or email mismatch.');
+      throw new Error('Invalid sign-in link or email mismatch');
     }
 
     const { user } = await signInWithEmailLink(auth, email, url);
