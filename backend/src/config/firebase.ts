@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 import dotenv from 'dotenv';
 import winston from 'winston';
 
-dotenv.config({ path: '.env.local' }); // Load backend specific .env.local
+dotenv.config({ path: '.env.local' });
 
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
@@ -15,59 +15,52 @@ let isInitialized = false;
 export function initializeFirebase(): boolean {
   if (isInitialized) {
     logger.debug('Firebase Admin SDK already initialized.');
-    return app !== null; // Return true if app is initialized, false if it's mock
+    return app !== null;
   }
 
   try {
-    // Validate environment variables
-    const required = [
-      'FIREBASE_PROJECT_ID',
-      'FIREBASE_CLIENT_EMAIL',
-      'FIREBASE_PRIVATE_KEY'
-    ];
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-    const missing = required.filter(key => !process.env[key]);
-
-    if (missing.length > 0) {
-      logger.warn(`⚠️  Missing Firebase Admin SDK credentials: ${missing.join(', ')}. Running in mock mode.`);
-      isInitialized = true; // Mark as initialized to prevent re-attempts
-      app = null; // Ensure app is null for mock mode
-      return false; // Indicate Firebase is NOT fully available
+    if (!projectId || !clientEmail || !privateKey) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Firebase Admin: Missing credentials for development, running in mock mode. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.');
+        return false;
+      }
+      throw new Error('Missing Firebase Admin credentials in production. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.');
     }
 
-    // Initialize Firebase Admin
+    const serviceAccount: admin.ServiceAccount = {
+      projectId,
+      clientEmail,
+      privateKey: privateKey.replace(/\\n/g, '\n'),
+    };
+
     app = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID!,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'), // CRITICAL: Replace escaped newlines
-      }),
+      credential: admin.credential.cert(serviceAccount),
     });
 
     isInitialized = true;
     logger.info('✅ Firebase Admin SDK initialized successfully');
-    return true; // Indicate Firebase is fully available
+    return true;
 
   } catch (error: any) {
     logger.error('❌ Firebase Admin SDK initialization failed:', error.message, error);
     isInitialized = true;
-    app = null; // Ensure app is null on failure
-    return false; // Indicate Firebase is NOT fully available
+    app = null;
+    return false;
   }
 }
 
-// Initialize on module load, but allow for mock mode
-initializeFirebase(); // This will run once when the module is imported
+initializeFirebase();
 
-// Helper to check if we're using real Firebase
 export const isFirebaseAvailable = () => app !== null;
 
-// Auth wrapper with error handling and mock behavior
 export const auth = {
   verifyIdToken: async (token: string) => {
     if (!app) {
       logger.warn('Firebase Admin SDK not initialized, returning mock token verification response.');
-      // Simulate a decoded token for mock mode
       return { uid: 'mock-user-id', email: 'test@example.com', email_verified: true, firebase: { identities: {}, sign_in_provider: 'mock' } } as admin.auth.DecodedIdToken;
     }
 
@@ -108,7 +101,6 @@ export const auth = {
   }
 };
 
-// Firestore wrapper with error handling and mock behavior
 export const db = {
   collection: (name: string) => {
     if (!app) {
@@ -135,7 +127,6 @@ export const db = {
   }
 };
 
-// Mock implementations for development/missing Firebase Admin SDK
 function createMockCollection(name: string) {
   logger.warn(`Mock mode: Accessing collection "${name}". Operations will be logged but not persisted.`);
   return {
