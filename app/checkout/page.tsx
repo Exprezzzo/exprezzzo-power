@@ -5,25 +5,26 @@ import { useState, useEffect, Suspense } from 'react'; // Added Suspense
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react'; // Ensure all icons are imported
 import dynamic from 'next/dynamic';
 
-// Dynamically import PaymentButton
+// Dynamically import PaymentButton as it's a client component.
+// It's a named export, so .then(mod => mod.PaymentButton) is correct.
 const PaymentButton = dynamic(
-  () => import('@/components/PaymentButton').then(mod => mod.PaymentButton),
+  () => import('@/components/PaymentButton').then(mod => mod.PaymentButton), // Correctly importing named export
   { ssr: false }
 );
 
-// This component uses useSearchParams directly, so it needs to be inside a Suspense boundary
+// This component directly uses useSearchParams, so it MUST be inside a Suspense boundary
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams(); // Correctly used within a client component wrapped by Suspense
-  const { user, signIn, signUp } = useAuth();
-  
+  const { user, signIn, signUp } = useAuth(); // Assuming useAuth provides signIn and signUp
+
   const plan = searchParams.get('plan') || 'power';
   const period = searchParams.get('period') || 'monthly';
-  
-  const [email, setEmail] = useState(user?.email || '');
+
+  const [email, setEmail] = useState(user?.email || ''); // Pre-fill email if user is logged in
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,25 +41,33 @@ function CheckoutContent() {
   };
 
   const handleCreateAccountAndProceed = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent default form submission
     setError('');
     setLoading(true);
 
     try {
-      if (!user && email && password) {
-        await signUp(email, password);
-      } else if (!user && email && !password) {
-        // Proceeding as guest - no Firebase account created, but email passed to Stripe
+      if (!user) {
+        if (!email) {
+          throw new Error('Email is required to create an account or proceed as guest.');
+        }
+        if (password) { // If password is provided, attempt to sign up
+          await signUp(email, password);
+          // User is now authenticated by Firebase
+        } else {
+          // If no password, allow "guest" checkout by just continuing
+          // The PaymentButton will pass the email.
+        }
       }
-      
       // Now proceed to payment with potentially newly authenticated user or existing user
       await handleProceedToStripe();
 
     } catch (err: any) {
+      console.error("Authentication during checkout error:", err);
       setError(err.message || "Failed to create account or sign in. Please try logging in first.");
       setLoading(false);
     }
   };
+
 
   const handleProceedToStripe = async () => {
     setError('');
@@ -70,13 +79,13 @@ function CheckoutContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           priceId: PRICE_IDS[period as keyof typeof PRICE_IDS],
-          userId: user?.uid || null,
-          userEmail: user?.email || email,
+          userId: user?.uid || null, // Pass uid if authenticated
+          userEmail: user?.email || email, // Pass authenticated email or entered guest email
         }),
       });
 
       const { url } = await response.json();
-      
+
       if (url) {
         window.location.href = url; // Redirect to Stripe
       } else {
@@ -88,6 +97,7 @@ function CheckoutContent() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -107,7 +117,7 @@ function CheckoutContent() {
           {/* Order Summary */}
           <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800">
             <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
-            
+
             <div className="space-y-4 mb-6">
               <div className="flex justify-between">
                 <span>Exprezzzo Power User</span>
@@ -156,7 +166,7 @@ function CheckoutContent() {
                 <p className="text-gray-400 mb-6">
                   You can complete your purchase as a guest (no password) or create an account for easy access.
                 </p>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2">Email</label>
                   <div className="relative">
@@ -171,7 +181,7 @@ function CheckoutContent() {
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Password (optional)
@@ -242,6 +252,7 @@ function CheckoutContent() {
                 </button>
               </>
             )}
+
 
             <div className="mt-6 flex items-center justify-center gap-2 text-gray-400">
               <Shield className="w-4 h-4" />
