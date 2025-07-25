@@ -1,8 +1,8 @@
 // app/api/stripe/checkout-session/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { doc, getDoc, setDoc } from 'firebase/firestore'; // For client-side Firestore (types only)
-import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin'; // Import getAdminApp AND getAdminFirestore (for direct use)
+// Removed: import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // These are client-side imports and are not used here
+import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin'; // Import getAdminApp AND getAdminFirestore
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
           metadata: { firebaseUid: userId },
         });
         customerId = customer.id;
-        await setDoc(userRef, { stripeCustomerId: customer.id }, { merge: true }); // Use adminFirestore here
+        await userRef.set({ stripeCustomerId: customer.id }, { merge: true }); // Use userRef.set directly from adminFirestore
         console.log(`Created new Stripe customer for user ${userId}: ${customerId}`);
       }
     } else if (userEmail) {
@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
         console.error('Checkout session creation failed: no userId or userEmail provided.');
         return NextResponse.json({ error: 'User information missing for checkout.' }, { status: 400 });
     }
+
 
     // Construct dynamic success and cancel URLs
     const host = req.headers.get('host');
