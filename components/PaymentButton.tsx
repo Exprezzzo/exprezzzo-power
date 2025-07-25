@@ -53,7 +53,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="px-8 py-4 rounded-lg font-semibold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white"
+        className="px-8 py-4 rounded-lg font-semibold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white" // Combined with provided styling
       >
         {loading ? 'Processing...' : buttonText}
       </button>
