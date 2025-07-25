@@ -1,8 +1,7 @@
 // app/api/stripe/checkout-session/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-// Removed: import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // These are client-side imports and are not used here
-import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin'; // Import getAdminApp AND getAdminFirestore
+import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin';
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -31,9 +30,10 @@ export async function POST(req: NextRequest) {
     if (userId) {
       const userRef = adminFirestore.collection('users').doc(userId); // Use adminFirestore here
       const userDoc = await userRef.get();
+      const userData = userDoc.data(); // Store the data once
 
-      if (userDoc.exists && userDoc.data()?.stripeCustomerId) {
-        customerId = userDoc.data().stripeCustomerId;
+      if (userDoc.exists && userData?.stripeCustomerId) {
+        customerId = userData.stripeCustomerId; // Now we can safely access it
         console.log(`Using existing Stripe customer for user ${userId}: ${customerId}`);
       } else {
         // Create a new Stripe customer
