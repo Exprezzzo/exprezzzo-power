@@ -26,7 +26,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId, userId, userEmail }),
+        body: JSON.stringify({ priceId, userId, userEmail }), // Pass userId and userEmail
       });
 
       if (!response.ok) {
@@ -53,7 +53,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="px-8 py-4 rounded-lg font-semibold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white" // Combined with provided styling
+        className="px-8 py-4 rounded-lg font-semibold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white"
       >
         {loading ? 'Processing...' : buttonText}
       </button>
@@ -63,5 +63,3 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
     </div>
   );
 };
-
-// Exported as a named export.
