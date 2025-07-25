@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 
 interface PaymentButtonProps {
   priceId: string; // The Stripe Price ID for the product
-  children: React.ReactNode; // Content inside the button (e.g., "Purchase")
+  buttonText: string; // Text to display on the button
+  userId?: string; // Optional: Pass Firebase User ID for customer linking
+  userEmail?: string | null; // Optional: Pass user email for customer linking
 }
 
-export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, children }) => {
+const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonText, userId, userEmail }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -25,7 +27,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, children 
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, userId, userEmail }), // Pass userId and userEmail
       });
 
       if (!response.ok) {
@@ -55,7 +57,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, children 
         disabled={loading}
         className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
       >
-        {loading ? 'Processing...' : children}
+        {loading ? 'Processing...' : buttonText}
       </button>
       {error && (
         <p className="mt-2 text-red-600 text-sm">{error}</p>
@@ -63,3 +65,5 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, children 
     </div>
   );
 };
+
+export default PaymentButton; // Changed to default export
