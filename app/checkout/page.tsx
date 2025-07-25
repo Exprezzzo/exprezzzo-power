@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense } from 'react'; // Added Suspense
 import { useRouter, useSearchParams } from 'next/navigation'; // Keep useSearchParams here
-import { useAuth } from '@/hooks/useAuth'; // Assuming useAuth is properly implemented
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react'; // Ensure all icons are imported
@@ -20,7 +20,7 @@ const PaymentButton = dynamic(
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams(); // This hook requires a Suspense boundary higher up
-  const { user, signIn, signUp } = useAuth(); // Assuming useAuth provides signIn and signUp
+  const { user, signIn, signUp } = useAuth();
 
   const plan = searchParams.get('plan') || 'power';
   const period = searchParams.get('period') || 'monthly';
