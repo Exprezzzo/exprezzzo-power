@@ -13,30 +13,12 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
-          }
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' }
         ]
       }
     ];
@@ -44,11 +26,7 @@ const nextConfig = {
 
   async redirects() {
     return [
-      {
-        source: '/app/signup', // Old path from your structure
-        destination: '/signup', // Correct path
-        permanent: true,
-      },
+      { source: '/app/signup', destination: '/signup', permanent: true },
     ];
   },
 
@@ -60,12 +38,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    // Ensure this matches if you have a `lib/publicRoutes.ts` module with named exports
-    // This might be needed if you try to import `publicRoutes` from a server component
-    // or a build time process. It is generally safer to list explicit imports.
-    // If your use of `publicRoutes` is solely client-side and dynamically loaded,
-    // then this might not be strictly necessary.
-    // clientRouterFilter: true, // Example
   },
 };
 
