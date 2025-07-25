@@ -1,67 +1,77 @@
 // app/invite/page.tsx
-// Corrected to wrap useSearchParams() with Suspense for proper Next.js prerendering.
+'use client';
 
-'use client'; // This directive must remain at the top
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Sparkles, ArrowRight, Gift } from 'lucide-react';
 
-import { Suspense, useEffect, useState } from 'react'; // Ensure Suspense is imported
-import { useRouter, useSearchParams } from 'next/navigation'; // Ensure useSearchParams is imported
-
-// This component will use the search params
+// This component directly uses useSearchParams, so it should be wrapped in Suspense
 function InviteContent() {
   const searchParams = useSearchParams();
-  // Ensure you handle potential null or undefined for 'code'
-  const code = searchParams ? searchParams.get('code') : null;
-
-  // --- Add your existing logic for the Invite page here ---
-  // This is a placeholder for the actual content of your invite page.
-  // Example: If your original page had more logic or a form, place it within this function.
+  const ref = searchParams.get('ref');
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#000',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div style={{
-        background: '#1a1a1a',
-        padding: '40px',
-        borderRadius: '16px',
-        border: '1px solid #333',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
-          ⚡ Invite to Exprezzzo Power Grid
-        </h1>
-        {code ? (
-          <p style={{ textAlign: 'center' }}>Using invite code: <strong>{code}</strong></p>
-        ) : (
-          <p style={{ textAlign: 'center' }}>No invite code found. Access may be limited.</p>
-        )}
-        {/* Add your actual invite page form/content here */}
-        <p style={{ textAlign: 'center', marginTop: '20px' }}>
-          Welcome to the future of AI access.
+    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+      <div className="max-w-2xl mx-auto text-center">
+        <div className="mb-8">
+          <Gift className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+          <h1 className="text-5xl font-bold mb-4">
+            You're Invited! 🎉
+          </h1>
+          <p className="text-xl text-gray-300">
+            Your friend thinks you'll love Exprezzzo Power
+          </p>
+        </div>
+
+        <div className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-2xl p-8 mb-8 border border-purple-500/50">
+          <h2 className="text-2xl font-bold mb-4">
+            Special Offer: Get 20% Off Your First Month
+          </h2>
+          <p className="text-gray-300 mb-6">
+            Join thousands of developers using our unified AI API to save time and money.
+          </p>
+
+          <Link
+            href={`/signup?ref=${ref}`} // Pass referral code to signup page
+            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105"
+          >
+            <Sparkles className="w-5 h-5" />
+            Claim Your Discount
+            <ArrowRight className="w-5 h-5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800">
+            <div className="text-3xl font-bold text-blue-400 mb-2">$97/mo</div>
+            <div className="text-gray-400">Unlimited AI Access</div>
+          </div>
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800">
+            <div className="text-3xl font-bold text-green-400 mb-2">40%</div>
+            <div className="text-gray-400">Cost Savings</div>
+          </div>
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800">
+            <div className="text-3xl font-bold text-purple-400 mb-2">24/7</div>
+            <div className="text-gray-400">Priority Support</div>
+          </div>
+        </div>
+
+        <p className="text-gray-400">
+          Already have an account?{' '}
+          <Link href="/login" className="text-blue-400 hover:text-blue-300">
+            Sign in
+          </Link>
         </p>
       </div>
     </div>
   );
 }
 
-// This is the page component that wraps the content in Suspense
+// Wrap the content that uses useSearchParams in Suspense
 export default function InvitePage() {
   return (
-    <Suspense fallback={
-      <div style={{
-        minHeight: '100vh', background: '#000', color: 'white',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
-      }}>
-        Loading Exprezzzo Invite...
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading invite...</div>}>
       <InviteContent />
     </Suspense>
   );
