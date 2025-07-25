@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth'; // Assuming useAuth is properly imple
 
 // Dynamically import PaymentButton as it's a client component
 const PaymentButton = dynamic(
-  () => import('@/components/PaymentButton'), // This now correctly imports the default export
+  () => import('@/components/PaymentButton').then(mod => mod.PaymentButton), // Named import
   { ssr: false }
 );
 
@@ -17,10 +17,10 @@ export default function PricingPage() {
   const { user } = useAuth(); // Access user info from useAuth
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
-  // IMPORTANT: REPLACE these with your ACTUAL Stripe Price IDs!
+  // IMPORTANT: These are your ACTUAL Stripe Price IDs from your dashboard!
   const PRICE_IDS = {
-    monthly: 'price_YOUR_MONTHLY_ID', // <<-- Replace with your actual Monthly Price ID
-    yearly: 'price_YOUR_YEARLY_ID' // <<-- Replace with your actual Yearly Price ID
+    monthly: 'price_1Ron5iHMIqbrm277EwcrZ1QD', // Your provided Monthly Price ID
+    yearly: 'price_1Ron8kHMIqbrm2776x3uVAH5' // Your provided Yearly Price ID
   };
 
   const features = [
