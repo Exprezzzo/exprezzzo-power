@@ -1,65 +1,50 @@
 // lib/firebaseAdmin.ts
-// Updated: Now explicitly exports the 'admin' namespace for FieldValue access.
+import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-import "server-only"; // Ensures this module is never bundled client-side.
+// CRITICAL: Lazy initialization prevents Vercel build failures
+let adminApp;
 
-import * as admin from 'firebase-admin'; // Keep this import
+export const getAdminApp = () => {
+  if (!getApps().length) {
+    // Check if on Vercel and secrets are not fully configured to prevent build errors
+    const isVercelBuildWithoutSecrets =
+      (process.env.VERCEL === '1' && !process.env.FIREBASE_PRIVATE_KEY);
 
-// A simple mock for Firebase Admin services during Vercel build.
-const mockFirestore = {
-  collection: () => ({
-    doc: () => ({
-      set: async () => console.log("[Firebase Mock] Firestore set called (build-time mock)"),
-      update: async () => console.log("[Firebase Mock] Firestore update called (build-time mock)"),
-      get: async () => ({ exists: false, data: () => ({}) }),
-    }),
-    where: () => mockFirestore.collection(),
-    limit: () => mockFirestore.collection(),
-    get: async () => ({ empty: true, docs: [] }),
-  }),
+    if (isVercelBuildWithoutSecrets) {
+      console.warn("Firebase Admin SDK skipped initialization in Vercel build environment due to missing secrets.");
+      // Return a mock or throw if this state should be fatal, but for builds,
+      // it's often best to allow it to pass if the Admin SDK isn't strictly needed at build time.
+      return null; // Or return a mock object if your code expects a non-null return
+    }
+
+    try {
+      const firebaseAdminConfig = {
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      };
+
+      if (!firebaseAdminConfig.projectId || !firebaseAdminConfig.clientEmail || !firebaseAdminConfig.privateKey) {
+        throw new Error("Missing Firebase Admin credentials. Check environment variables.");
+      }
+
+      adminApp = initializeApp({
+        credential: cert(firebaseAdminConfig),
+      });
+    } catch (error) {
+      console.error("Firebase Admin initialization error:", error);
+      // Depending on strictness, you might re-throw or handle gracefully
+      throw error;
+    }
+  } else {
+    adminApp = getApp(); // If already initialized, get the existing app
+  }
+  return adminApp;
 };
 
-let initializedApp: admin.app.App | null = null;
-
-export function getFirebaseAdminApp() {
-  if (initializedApp) {
-    return initializedApp;
-  }
-
-  const isVercelBuildWithoutSecrets =
-    (process.env.VERCEL === '1' &&
-     (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY));
-
-  if (isVercelBuildWithoutSecrets) {
-    console.warn('Firebase Admin: Detecting Vercel build environment without full credentials. Returning mock for build process.');
-    return {
-      firestore: () => mockFirestore,
-      // Add other mocked services if needed, e.g., auth: () => mockAuth
-    } as unknown as admin.app.App; // Cast to bypass TypeScript errors for runtime type
-  }
-
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-      console.error('Firebase Admin credentials are missing at runtime. Cannot initialize.');
-      throw new Error('Firebase Admin environment variables are missing at runtime. Cannot initialize.');
-  }
-
-  try {
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-    const serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: privateKey,
-    };
-    initializedApp = admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    console.log("Firebase Admin SDK initialized successfully.");
-    return initializedApp;
-  } catch (error) {
-    console.error("Failed to initialize Firebase Admin SDK (runtime error):", error);
-    throw error;
-  }
-}
-
-// Export Firestore and the 'admin' namespace for FieldValue access
-export const db = getFirebaseAdminApp().firestore();
-export { admin }; // ADD THIS LINE: Explicitly export the 'admin' namespace
-// export const authAdmin = getFirebaseAdminApp().auth(); // Example: if you need Auth Admin
+// You might also export getFirestore directly for convenience in API routes
+export const adminFirestore = () => {
+  const app = getAdminApp();
+  return app ? getFirestore(app) : null;
+};
