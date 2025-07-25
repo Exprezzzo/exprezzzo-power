@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // For client-side Firestore
 import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Admin SDK
-import { getAuth as getAdminAuth } from 'firebase-admin/auth'; // For server-side Firebase Admin Auth
+// Removed: import { getAuth as getAdminAuth } from 'firebase-admin/auth'; // Not used in this file
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -18,13 +18,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Price ID is required.' }, { status: 400 });
     }
 
-    // userId can be null for guest checkout initially. The webhook handles creation.
-    // But if user is supposed to be authenticated, this check helps.
-    // For guest checkout, userId might be null, and userEmail is used.
-
     const adminApp = getAdminApp(); // Get the Firebase Admin app instance
     if (!adminApp) {
-      console.error("Firebase Admin App not initialized, cannot create Stripe customer.");
+      console.error("Checkout-session API: Firebase Admin App not initialized. Cannot create Stripe customer.");
       return NextResponse.json({ error: "Server configuration error. Please try again later." }, { status: 500 });
     }
     const adminFirestore = getFirestore(adminApp);
@@ -52,7 +48,6 @@ export async function POST(req: NextRequest) {
       }
     } else if (userEmail) {
       // If no userId but email is provided (guest checkout), try to find existing customer by email
-      // Or create a new one without linking to a Firebase UID yet (webhook will do that)
       const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
@@ -66,7 +61,6 @@ export async function POST(req: NextRequest) {
         console.log(`Created new Stripe customer for guest email: ${customerId}`);
       }
     } else {
-        // No user ID or email provided - this should not happen if client-side validation is good
         console.error('Checkout session creation failed: no userId or userEmail provided.');
         return NextResponse.json({ error: 'User information missing for checkout.' }, { status: 400 });
     }
