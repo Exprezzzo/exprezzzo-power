@@ -1,9 +1,10 @@
 // app/playground/page.tsx
-// **FIXED: Ensure ALL used lucide-react icons are imported.**
+// **FIXED: Ensure ALL used lucide-react icons are imported .**
 
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter
 // --- CRITICAL FIX: Ensure ALL these icons are in this import list ---
 // These icons are used in the sidebar and main chat area.
 import { Send, Menu, X, History, FileText, Key, Activity, DollarSign, AlertCircle, Zap, Upload, Settings, Brain, Code } from 'lucide-react';
@@ -19,14 +20,16 @@ interface Message {
 }
 
 export default function AIPlayground() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth(); // Get user and loading state
+  const router = useRouter(); // Initialize useRouter
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  // Removed apiKey state as it should come from user object or backend
 
   const availableModels = [
     { id: 'gpt-4o', name: 'GPT-4o', icon: <Brain size={16} /> },
@@ -39,6 +42,36 @@ export default function AIPlayground() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // CRITICAL: Access Control Logic
+  useEffect(() => {
+    if (!loading) { // Only act once authentication state is known
+      if (!user) {
+        // If no user, redirect to login
+        router.push('/login');
+      } else if (!user.isPro) {
+        // If user exists but is not Pro, redirect to pricing
+        router.push('/pricing');
+      }
+      // If user exists AND isPro, they stay on this page.
+    }
+  }, [user, loading, router]); // Depend on user, loading, and router for reactivity
+
+  // Show loading or redirecting state while auth is being processed
+  if (loading || (!user && !loading) || (user && !user.isPro && !loading)) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-600 to-purple-800 text-white">
+        <div className="text-center">
+          <svg className="animate-spin h-10 w-10 text-white mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <h1 className="text-2xl font-bold">Checking your access...</h1>
+          <p className="text-lg">Please wait a moment.</p>
+        </div>
+      </div>
+    );
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -124,7 +157,7 @@ export default function AIPlayground() {
   };
 
   const handlePricing = () => {
-    alert('Pricing information not yet implemented.');
+    router.push('/pricing'); // Redirect to pricing page
   };
 
   const handleHistorySelect = (historyMessages: Message[]) => {
