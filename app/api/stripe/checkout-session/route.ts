@@ -1,57 +1,48 @@
 // app/api/stripe/checkout-session/route.ts
-import Stripe from 'stripe';
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase'; // Assuming Firebase auth is correctly imported and initialized
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // Import Firestore functions
+import Stripe from 'stripe';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // For client-side Firestore
+import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Admin SDK
+import { getAuth as getAdminAuth } from 'firebase-admin/auth'; // For server-side Firebase Admin Auth
 
-// Ensure Stripe is initialized with your secret key
+// Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20', // Use a recent API version for best compatibility
+  apiVersion: '2024-06-20', // Use a stable API version
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const { priceId } = await req.json();
+    const { priceId, userId, userEmail } = await req.json(); // Expect userId and userEmail from frontend
 
-    // Get current authenticated user from Firebase
-    // NOTE: For Next.js API routes, `auth.currentUser` is for client-side.
-    // For server-side, you'd typically verify an ID token or use Firebase Admin SDK for auth.
-    // Assuming 'auth' here *might* imply Firebase Admin SDK if run server-side.
-    // If 'auth' is client-side only, you'll need to pass the user's ID token from client.
-    // For now, I'm using `auth.currentUser` which would work if this API route
-    // is structured such that it shares a context with client-side auth,
-    // or if `auth` itself is a server-side initialized admin instance.
-    // Best practice for server: client sends ID token, server verifies with admin SDK.
-    const currentUser = auth.currentUser; 
+    if (!priceId) {
+      return NextResponse.json({ error: 'Price ID is required.' }, { status: 400 });
+    }
 
-    // --- CRITICAL CHECK: User Authentication ---
-    // If you are relying on client-side auth.currentUser, this check might fail server-side.
-    // For server-side authenticated requests, the client should send an ID token.
-    // Example: const idToken = req.headers.get('Authorization')?.split('Bearer ')[1];
-    //          const decodedToken = await adminAuth.verifyIdToken(idToken);
-    //          const userId = decodedToken.uid;
-    // For simplicity with existing structure, I'll proceed with auth.currentUser,
-    // but if this consistently fails, client-side ID token passing is needed.
-
-    if (!currentUser) {
-      console.error('User not authenticated for checkout session.');
+    if (!userId) {
+      // This API route requires a userId to link payment to a user.
+      // Ensure the frontend sends it or handle unauthenticated users differently.
+      console.error('Checkout session creation failed: userId is missing.');
       return NextResponse.json({ error: 'Authentication required for checkout.' }, { status: 401 });
     }
 
-    const userId = currentUser.uid; // Get the user's UID
+    const adminApp = getAdminApp(); // Get the Firebase Admin app instance
+    if (!adminApp) {
+      throw new Error('Firebase Admin App not initialized.');
+    }
+    const adminFirestore = getFirestore(adminApp);
 
-    const firestore = getFirestore(); // Get Firestore instance
-    const userRef = doc(firestore, 'users', userId);
+    // Retrieve or create Stripe Customer associated with Firebase UID
+    const userRef = doc(adminFirestore, 'users', userId);
     const userDoc = await getDoc(userRef);
     let customerId: string | undefined;
 
-    // Retrieve or create Stripe Customer
     if (userDoc.exists() && userDoc.data()?.stripeCustomerId) {
       customerId = userDoc.data().stripeCustomerId;
+      console.log(`Using existing Stripe customer for user ${userId}: ${customerId}`);
     } else {
       // Create a new Stripe customer
       const customer = await stripe.customers.create({
-        email: currentUser.email || undefined, // Use email if available
+        email: userEmail || undefined, // Use email if provided
         metadata: { firebaseUid: userId }, // Link to Firebase UID for webhook
       });
       customerId = customer.id;
@@ -62,15 +53,15 @@ export async function POST(req: NextRequest) {
 
     // Construct dynamic success and cancel URLs
     const host = req.headers.get('host'); // e.g., your-domain.vercel.app
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'; // Use HTTPS in production
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
 
     const successUrl = `${protocol}://${host}/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${protocol}://${host}/pricing`; // Redirect to pricing page on cancel
+    const cancelUrl = `${protocol}://${host}/pricing`;
 
     // Create the Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       customer: customerId, // Use the retrieved or newly created customer ID
-      mode: 'subscription', // Use 'subscription' for recurring payments
+      mode: 'subscription',
       line_items: [
         {
           price: priceId, // The Stripe Price ID
@@ -79,10 +70,13 @@ export async function POST(req: NextRequest) {
       ],
       success_url: successUrl,
       cancel_url: cancelUrl,
-      // Optional: Pass metadata for the session if needed
+      allow_promotion_codes: true, // Allow promo codes if desired
+      // Pass metadata to the session for later retrieval in webhooks/success page
       metadata: {
         firebaseUid: userId,
       },
+      // Prefill customer email if available
+      customer_email: userEmail || undefined,
     });
 
     if (!session.url) {
@@ -94,9 +88,9 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Error in Stripe checkout-session API:', error);
-    // Provide a more generic error to the client for security
+    // Provide a more generic error to the client for security, but log details server-side
     return NextResponse.json(
-      { error: 'Payment system temporarily unavailable. Please try again or contact support.' },
+      { error: 'Payment system temporarily unavailable. Please verify your Stripe API keys and Price IDs, and ensure you are logged in.' },
       { status: 500 }
     );
   }
