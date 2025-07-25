@@ -3,15 +3,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic'; // Only if you need other dynamic imports
-import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles, Mail, Lock } from 'lucide-react'; // Ensure all icons are imported
 import { useAuth } from '@/hooks/useAuth'; // Import useAuth to check user status
 import { useRouter } from 'next/navigation';
 
-// Dynamically import PaymentButton as it's a client component
+// Dynamically import PaymentButton as it's a client component.
+// It's a named export, so .then(mod => mod.PaymentButton) is correct.
 const PaymentButton = dynamic(
-  () => import('@/components/PaymentButton').then(mod => mod.PaymentButton), // Correctly imports named export
-  { ssr: false }
+  () => import('@/components/PaymentButton').then(mod => mod.PaymentButton),
+  { ssr: false } // Crucial: This ensures the component is only rendered on the client
 );
 
 export default function LandingPage() {
@@ -20,6 +21,7 @@ export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly'); // Added for pricing section on landing
 
   // IMPORTANT: This is your ACTUAL Stripe Test Price ID for the Monthly Plan
+  // Used in the direct purchase section on this page
   const FOUNDING_PRICE_ID = 'price_1Ron5iHMIqbrm277EwcrZ1QD'; // Your provided Monthly Price ID
 
   const features = [
@@ -237,7 +239,7 @@ export default function LandingPage() {
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-400" />
-                <span className="text-gray-300">Advanced analytics & team features</span>
+                <span className="text-gray-300">Advanced analytics</span>
               </li>
             </ul>
             <Link
