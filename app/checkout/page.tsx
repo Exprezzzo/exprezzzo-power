@@ -1,11 +1,11 @@
 // app/checkout/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react'; // Added Suspense
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth'; // Assuming useAuth is properly implemented
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react'; // Ensure all icons are imported
+import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import PaymentButton
@@ -14,15 +14,16 @@ const PaymentButton = dynamic(
   { ssr: false }
 );
 
-export default function CheckoutPage() {
+// This component uses useSearchParams directly, so it needs to be inside a Suspense boundary
+function CheckoutContent() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // Correct way to use search params in client components
-  const { user, signIn, signUp } = useAuth(); // Assuming useAuth provides signIn and signUp
-
+  const searchParams = useSearchParams(); // Correctly used within a client component wrapped by Suspense
+  const { user, signIn, signUp } = useAuth();
+  
   const plan = searchParams.get('plan') || 'power';
   const period = searchParams.get('period') || 'monthly';
-
-  const [email, setEmail] = useState(user?.email || ''); // Pre-fill email if user is logged in
+  
+  const [email, setEmail] = useState(user?.email || '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,34 +40,25 @@ export default function CheckoutPage() {
   };
 
   const handleCreateAccountAndProceed = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // If user is not logged in, attempt to sign up with provided email/password
-      if (!user) {
-        if (!email) {
-          throw new Error('Email is required to create an account or proceed as guest.');
-        }
-        if (password) { // If password is provided, attempt to sign up
-          await signUp(email, password);
-          // User is now authenticated by Firebase
-        } else {
-          // If no password, allow "guest" checkout by just continuing
-          // The PaymentButton will pass the email.
-        }
+      if (!user && email && password) {
+        await signUp(email, password);
+      } else if (!user && email && !password) {
+        // Proceeding as guest - no Firebase account created, but email passed to Stripe
       }
+      
       // Now proceed to payment with potentially newly authenticated user or existing user
       await handleProceedToStripe();
 
     } catch (err: any) {
-      console.error("Authentication during checkout error:", err);
       setError(err.message || "Failed to create account or sign in. Please try logging in first.");
       setLoading(false);
     }
   };
-
 
   const handleProceedToStripe = async () => {
     setError('');
@@ -78,13 +70,13 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           priceId: PRICE_IDS[period as keyof typeof PRICE_IDS],
-          userId: user?.uid || null, // Pass uid if authenticated
-          userEmail: user?.email || email, // Pass authenticated email or entered guest email
+          userId: user?.uid || null,
+          userEmail: user?.email || email,
         }),
       });
 
       const { url } = await response.json();
-
+      
       if (url) {
         window.location.href = url; // Redirect to Stripe
       } else {
@@ -96,7 +88,6 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -116,7 +107,7 @@ export default function CheckoutPage() {
           {/* Order Summary */}
           <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800">
             <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
-
+            
             <div className="space-y-4 mb-6">
               <div className="flex justify-between">
                 <span>Exprezzzo Power User</span>
@@ -159,70 +150,69 @@ export default function CheckoutPage() {
           {/* Payment Form / Account Creation */}
           <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800">
             {!user ? (
-              <>
+              // Show account creation/guest checkout form if not logged in
+              <form onSubmit={handleCreateAccountAndProceed} className="space-y-4">
                 <h2 className="text-2xl font-bold mb-6">Create Your Account</h2>
                 <p className="text-gray-400 mb-6">
                   You can complete your purchase as a guest (no password) or create an account for easy access.
                 </p>
-
-                <form onSubmit={handleCreateAccountAndProceed} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Email</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
-                        placeholder="you@example.com"
-                        required
-                      />
-                    </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                      placeholder="you@example.com"
+                      required
+                    />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Password (optional)
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
-                        placeholder="Create a password or leave blank for guest checkout"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">
-                        Leaving password blank means you'll checkout as a guest. You can create a password later.
-                      </p>
-                    </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Password (optional)
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500"
+                      placeholder="Create a password or leave blank for guest checkout"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Leaving password blank means you'll checkout as a guest. You can create a password later.
+                    </p>
                   </div>
+                </div>
 
-                  {error && (
-                    <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 flex items-start gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-red-400">{error}</p>
-                    </div>
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-400">{error}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit" // This button handles account creation/guest flow then calls Stripe
+                  disabled={loading || !email}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    'Processing...'
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5" />
+                      {password ? 'Create Account & Pay' : 'Proceed as Guest & Pay'}
+                    </>
                   )}
-
-                  <button
-                    type="submit" // Changed to submit to trigger handleCreateAccountAndProceed
-                    disabled={loading || !email}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      'Processing...'
-                    ) : (
-                      <>
-                        <CreditCard className="w-5 h-5" />
-                        {password ? 'Create Account & Pay' : 'Proceed as Guest & Pay'}
-                      </>
-                    )}
-                  </button>
-                </form>
-              </>
+                </button>
+              </form>
             ) : ( // If user is already logged in
               <>
                 <div className="mb-6 bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
@@ -237,7 +227,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <button
-                  onClick={handleProceedToStripe} // Direct call if already logged in
+                  onClick={handleProceedToStripe} // Direct call to Stripe if already logged in
                   disabled={loading}
                   className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
                 >
@@ -252,7 +242,6 @@ export default function CheckoutPage() {
                 </button>
               </>
             )}
-
 
             <div className="mt-6 flex items-center justify-center gap-2 text-gray-400">
               <Shield className="w-4 h-4" />
