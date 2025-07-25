@@ -100,8 +100,6 @@ class AnthropicAIProvider implements AIProvider {
 
   async *streamChatCompletion(messages: AIChatMessage[]): AsyncGenerator<string, void, unknown> {
     try {
-      // Anthropic API expects messages in a specific format with system, user, assistant roles.
-      // The last message must be 'user'.
       const stream = await this.anthropic.messages.stream({
         model: this.model,
         max_tokens: 4096, // Or a dynamic value
@@ -150,6 +148,7 @@ class GroqAIProvider implements AIProvider {
     }
   }
 }
+
 
 // --- List of all instantiated AI Providers ---
 // Initialize providers only if API keys are available
