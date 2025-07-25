@@ -21,13 +21,12 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
     setError(null);
 
     try {
-      // Call your Next.js API route to create a Stripe checkout session
       const response = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId, userId, userEmail }), // Pass userId and userEmail
+        body: JSON.stringify({ priceId, userId, userEmail }),
       });
 
       if (!response.ok) {
@@ -37,7 +36,6 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
 
       const { url } = await response.json();
       if (url) {
-        // Redirect to Stripe Checkout page
         window.location.assign(url);
       } else {
         throw new Error('No checkout URL received from API.');
@@ -55,7 +53,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="px-8 py-4 rounded-lg font-semibold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white" // Combined with provided styling
+        className="px-8 py-4 rounded-lg font-semibold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white"
       >
         {loading ? 'Processing...' : buttonText}
       </button>
@@ -66,4 +64,4 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonTex
   );
 };
 
-// This is now a named export to match app/page.tsx and app/pricing/page.tsx dynamic imports
+// Exported as a named export.
