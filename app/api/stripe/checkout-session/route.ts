@@ -18,10 +18,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Price ID is required.' }, { status: 400 });
     }
 
-    if (!userId) {
-      console.error('Checkout session creation failed: userId is missing.');
-      return NextResponse.json({ error: 'Authentication required for checkout.' }, { status: 401 });
-    }
+    // userId can be null for guest checkout initially. The webhook handles creation.
+    // But if user is supposed to be authenticated, this check helps.
+    // For guest checkout, userId might be null, and userEmail is used.
 
     const adminApp = getAdminApp(); // Get the Firebase Admin app instance
     if (!adminApp) {
@@ -30,25 +29,48 @@ export async function POST(req: NextRequest) {
     }
     const adminFirestore = getFirestore(adminApp);
 
-    // Retrieve or create Stripe Customer associated with Firebase UID
-    const userRef = doc(adminFirestore, 'users', userId);
-    const userDoc = await getDoc(userRef);
     let customerId: string | undefined;
 
-    if (userDoc.exists() && userDoc.data()?.stripeCustomerId) {
-      customerId = userDoc.data().stripeCustomerId;
-      console.log(`Using existing Stripe customer for user ${userId}: ${customerId}`);
+    // If a userId is passed from an authenticated user, try to find/create their Stripe customer
+    if (userId) {
+      const userRef = doc(adminFirestore, 'users', userId);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists() && userDoc.data()?.stripeCustomerId) {
+        customerId = userDoc.data().stripeCustomerId;
+        console.log(`Using existing Stripe customer for user ${userId}: ${customerId}`);
+      } else {
+        // Create a new Stripe customer
+        const customer = await stripe.customers.create({
+          email: userEmail || undefined, // Use email if provided
+          metadata: { firebaseUid: userId }, // Link to Firebase UID for webhook
+        });
+        customerId = customer.id;
+        // Save the new Stripe customer ID to Firestore
+        await setDoc(userRef, { stripeCustomerId: customer.id }, { merge: true });
+        console.log(`Created new Stripe customer for user ${userId}: ${customerId}`);
+      }
+    } else if (userEmail) {
+      // If no userId but email is provided (guest checkout), try to find existing customer by email
+      // Or create a new one without linking to a Firebase UID yet (webhook will do that)
+      const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        console.log(`Using existing Stripe customer found by email for guest: ${customerId}`);
+      } else {
+        const customer = await stripe.customers.create({
+          email: userEmail,
+          metadata: { guestEmail: userEmail } // Mark as guest for webhook
+        });
+        customerId = customer.id;
+        console.log(`Created new Stripe customer for guest email: ${customerId}`);
+      }
     } else {
-      // Create a new Stripe customer
-      const customer = await stripe.customers.create({
-        email: userEmail || undefined, // Use email if provided
-        metadata: { firebaseUid: userId }, // Link to Firebase UID for webhook
-      });
-      customerId = customer.id;
-      // Save the new Stripe customer ID to Firestore
-      await setDoc(userRef, { stripeCustomerId: customer.id }, { merge: true });
-      console.log(`Created new Stripe customer for user ${userId}: ${customerId}`);
+        // No user ID or email provided - this should not happen if client-side validation is good
+        console.error('Checkout session creation failed: no userId or userEmail provided.');
+        return NextResponse.json({ error: 'User information missing for checkout.' }, { status: 400 });
     }
+
 
     // Construct dynamic success and cancel URLs
     const host = req.headers.get('host'); // e.g., your-domain.vercel.app
@@ -72,7 +94,8 @@ export async function POST(req: NextRequest) {
       allow_promotion_codes: true, // Allow promo codes if desired
       // Pass metadata to the session for later retrieval in webhooks/success page
       metadata: {
-        firebaseUid: userId,
+        firebaseUid: userId || 'guest', // Pass 'guest' if not authenticated Firebase user
+        planType: plan, // Pass plan type from query param if available (though not used in client request)
       },
       // Prefill customer email if available
       customer_email: userEmail || undefined,
@@ -82,12 +105,11 @@ export async function POST(req: NextRequest) {
       throw new Error('Stripe session URL not created.');
     }
 
-    console.log(`Stripe Checkout Session created for user ${userId}: ${session.url}`);
+    console.log(`Stripe Checkout Session created for user ${userId || 'guest'}: ${session.url}`);
     return NextResponse.json({ url: session.url }, { status: 200 });
 
   } catch (error: any) {
     console.error('Error in Stripe checkout-session API:', error);
-    // Provide a more generic error to the client for security, but log details server-side
     return NextResponse.json(
       { error: 'Payment system temporarily unavailable. Please verify your Stripe API keys and Price IDs, and ensure you are logged in.' },
       { status: 500 }
