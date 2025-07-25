@@ -1,28 +1,27 @@
 // app/page.tsx
-'use client'; // Ensure this is a client component
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles, Mail, Lock } from 'lucide-react'; // Ensure all icons are imported
-import { useAuth } from '@/hooks/useAuth'; // Import useAuth to check user status
+import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles, Mail, Lock } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { APP_NAME, PRICING } from '@/lib/constants'; // Import constants
 
-// Dynamically import PaymentButton as it's a client component.
-// It's a named export, so .then(mod => mod.PaymentButton) is correct.
+// Dynamically import PaymentButton (as named export)
 const PaymentButton = dynamic(
   () => import('@/components/PaymentButton').then(mod => mod.PaymentButton),
-  { ssr: false } // Crucial: This ensures the component is only rendered on the client
+  { ssr: false }
 );
 
 export default function LandingPage() {
-  const { user, loading } = useAuth(); // Get user and loading state from useAuth
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly'); // Added for pricing section on landing
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
-  // IMPORTANT: This is your ACTUAL Stripe Test Price ID for the Monthly Plan
-  // Used in the direct purchase section on this page
-  const FOUNDING_PRICE_ID = 'price_1Ron5iHMIqbrm277EwcrZ1QD'; // Your provided Monthly Price ID
+  // Use price IDs from constants
+  const FOUNDING_PRICE_ID = PRICING.monthly.priceId;
 
   const features = [
     { icon: <Brain className="w-5 h-5" />, text: "Access to GPT-4o, Claude Opus, Gemini Pro" },
@@ -34,16 +33,13 @@ export default function LandingPage() {
   ];
 
   const handleGetStarted = () => {
-    // If user is logged in and has pro, go to playground
     if (user?.isPro) {
       router.push('/playground');
     } else {
-      // Otherwise, smooth scroll to pricing section on this page
       document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  // Display loading state while authentication is being checked
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -66,7 +62,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="relative z-10 flex justify-between items-center px-6 lg:px-12 py-6">
         <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-          Exprezzzo Power
+          {APP_NAME}
         </Link>
 
         <div className="flex items-center gap-6">
@@ -221,7 +217,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-2xl font-bold mb-4">Power User</h3>
             <div className="text-4xl font-bold mb-6">
-              ${billingPeriod === 'monthly' ? '97' : '931'}
+              ${billingPeriod === 'monthly' ? PRICING.monthly.price : PRICING.yearly.price}
               <span className="text-lg font-normal text-gray-400">/{billingPeriod === 'monthly' ? 'month' : 'year'}</span>
             </div>
             <ul className="space-y-3 mb-8">
@@ -332,7 +328,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; 2025 Exprezzzo Power. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Exprezzzo Power. All rights reserved.</p>
           </div>
         </div>
       </footer>
