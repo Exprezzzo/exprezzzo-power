@@ -4,21 +4,22 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles, Mail, Lock } from 'lucide-react';
+import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles, Mail, Lock } from 'lucide-react'; // Ensure all icons are imported
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_NAME, PRICING } from '@/lib/constants'; // Import constants
 
-// Dynamically import PaymentButton (as named export)
+// Dynamically import PaymentButton as it's a client component.
+// It's a named export, so .then(mod => mod.PaymentButton) is correct.
 const PaymentButton = dynamic(
   () => import('@/components/PaymentButton').then(mod => mod.PaymentButton),
-  { ssr: false }
+  { ssr: false } // Crucial: This ensures the component is only rendered on the client
 );
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly'); // Added for pricing section on landing
 
   // Use price IDs from constants
   const FOUNDING_PRICE_ID = PRICING.monthly.priceId;
@@ -328,7 +329,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
-            <p>&copy; {new Date().getFullYear()} Exprezzzo Power. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.</p>
           </div>
         </div>
       </footer>
