@@ -142,25 +142,19 @@ export default function AIPlayground() {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // NEW: Sidebar Button Functions
+  // NEW: Sidebar Button Functions (from previous comprehensive response)
   const handleNewChat = () => {
     setMessages([]); // Clear chat history
     setInput('');    // Clear input
     setSidebarOpen(false); // Close sidebar
-    // Optional: Reset model to default if desired
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // TODO: Implement actual file upload to Firebase Storage or a backend API
     console.log('File selected for upload:', file.name);
     alert(`File upload is being implemented! Selected: ${file.name}`);
-    // You would typically upload the file here, e.g.:
-    // const storageRef = ref(storage, `user_files/${user.uid}/${file.name}`);
-    // await uploadBytes(storageRef, file);
-    // Then perhaps process the file for RAG or Q&A
   };
 
   const handleAPIKeys = () => {
