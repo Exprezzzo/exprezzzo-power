@@ -1,103 +1,84 @@
-// --- Start of updated code for app/login/page.tsx ---
-
+// app/login/page.tsx
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase'; // Ensure this is your client-side Firebase auth instance
+import Link from 'next/link';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // TEMPORARY SECURITY FIX: Replaced hardcoded password with environment variable.
-    // WARNING: NEXT_PUBLIC_ADMIN_PASSWORD_TEMP is still exposed in the client-side bundle.
-    // This is a temporary measure until proper Firebase Admin SDK authentication is implemented.
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD_TEMP) {
-      // Set a simple session flag (still temporary, will be replaced with secure JWT)
-      localStorage.setItem('adminAuth', 'true');
-      router.push('/admin');
-    } else {
-      setError('Invalid password');
+    setError(null);
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Login successful, user is automatically logged in.
+      // Redirect to playground or dashboard
+      router.push('/playground'); // Or the page you want them to land on after login
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "Failed to log in. Please check your credentials.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#000',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
-      <div style={{
-        background: '#1a1a1a',
-        padding: '40px',
-        borderRadius: '16px',
-        border: '1px solid #333',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
-          ⚡ Admin Login
-        </h1>
-
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
+      <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-700">
+        <h1 className="text-3xl font-bold text-center mb-6 text-blue-400">Login to Exprezzzo Power</h1>
         <form onSubmit={handleLogin}>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter admin password"
-            style={{
-              width: '100%',
-              padding: '16px',
-              fontSize: '18px',
-              background: '#000',
-              border: '2px solid #333',
-              borderRadius: '8px',
-              color: 'white',
-              marginBottom: '20px',
-              boxSizing: 'border-box'
-            }}
-          />
-
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-gray-300 text-sm font-bold mb-2">
+              Email:
+            </label>
+            <input
+              type="email"
+              id="email"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 text-white"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <label htmlFor="password" className="block text-gray-300 text-sm font-bold mb-2">
+              Password:
+            </label>
+            <input
+              type="password"
+              id="password"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 text-white"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
           {error && (
-            <p style={{ color: '#ef4444', marginBottom: '20px' }}>{error}</p>
+            <p className="text-red-500 text-xs italic mb-4">{error}</p>
           )}
-
-          <button
-            type="submit"
-            style={{
-              width: '100%',
-              padding: '16px',
-              fontSize: '18px',
-              background: '#22c55e',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}
-          >
-            Login to Power Grid
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors duration-200"
+              disabled={loading}
+            >
+              {loading ? 'Logging In...' : 'Login'}
+            </button>
+            <Link href="/signup" className="inline-block align-baseline font-bold text-sm text-blue-400 hover:text-blue-300">
+              Don't have an account? Sign Up
+            </Link>
+          </div>
         </form>
-
-        {/* Removed the hardcoded default password display here */}
-        {/* <p style={{
-          textAlign: 'center',
-          marginTop: '20px',
-          color: '#666',
-          fontSize: '14px'
-        }}>
-          Default password: power123
-        </p> */}
       </div>
     </div>
   );
 }
-
-// --- End of updated code for app/login/page.tsx ---
