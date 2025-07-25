@@ -3,10 +3,11 @@
 
 import { useState, useEffect, Suspense } from 'react'; // Added Suspense
 import { useRouter, useSearchParams } from 'next/navigation'; // Keep useSearchParams here
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth'; // Assuming useAuth is properly implemented
 import Link from 'next/link';
-import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react'; // Ensure all icons are imported
 import dynamic from 'next/dynamic';
+import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react'; // Ensure all icons are imported
+import { APP_NAME, PRICING } from '@/lib/constants'; // Import constants
 
 // Dynamically import PaymentButton as it's a client component.
 // It's a named export, so .then(mod => mod.PaymentButton) is correct.
@@ -19,7 +20,7 @@ const PaymentButton = dynamic(
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams(); // This hook requires a Suspense boundary higher up
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp } = useAuth(); // Assuming useAuth provides signIn and signUp
 
   const plan = searchParams.get('plan') || 'power';
   const period = searchParams.get('period') || 'monthly';
@@ -29,15 +30,16 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const priceInfo = {
-    monthly: { price: 97, interval: 'month' },
-    yearly: { price: 931, interval: 'year', savings: 233 }
+  const priceInfo = { // Using PRICING constant for consistency
+    monthly: { price: PRICING.monthly.price, interval: 'month' },
+    yearly: { price: PRICING.yearly.price, interval: 'year', savings: PRICING.yearly.savings }
   };
 
   // IMPORTANT: These are your ACTUAL Stripe Price IDs from your dashboard!
+  // Retrieved from constants now
   const PRICE_IDS = {
-    monthly: 'price_1Ron5iHMIqbrm277EwcrZ1QD', // Your provided Monthly Price ID
-    yearly: 'price_1Ron8kHMIqbrm2776x3uVAH5' // Your provided Yearly Price ID
+    monthly: PRICING.monthly.priceId,
+    yearly: PRICING.yearly.priceId
   };
 
   const handleCreateAccountAndProceed = async (e: React.FormEvent) => {
@@ -46,18 +48,18 @@ function CheckoutContent() {
     setLoading(true);
 
     try {
-      if (!user) {
+      if (!user) { // Only attempt sign-up if no user is currently authenticated
         if (!email) {
           throw new Error('Email is required to create an account or proceed as guest.');
         }
-        if (password) { // If password is provided, attempt to sign up
+        if (password) { // If password is provided, attempt to sign up via client-side Firebase Auth
           await signUp(email, password);
-          // User is now authenticated by Firebase
         } else {
-          // If no password, allow "guest" checkout by just continuing
-          // The PaymentButton will pass the email.
+          // If no password, proceed as "guest". The email will be passed to Stripe,
+          // and the webhook will handle Firebase user creation if needed.
         }
       }
+
       // Now proceed to payment with potentially newly authenticated user or existing user
       await handleProceedToStripe();
 
@@ -79,7 +81,7 @@ function CheckoutContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           priceId: PRICE_IDS[period as keyof typeof PRICE_IDS],
-          userId: user?.uid || null, // Pass uid if authenticated
+          userId: user?.uid || null, // Pass uid if authenticated, else null
           userEmail: user?.email || email, // Pass authenticated email or entered guest email
         }),
       });
