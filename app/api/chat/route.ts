@@ -1,7 +1,7 @@
 // app/api/chat/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { allAIProviders } from '@/lib/ai-providers'; // Correctly import allAIProviders
-import { getFirestore } from 'firebase-admin/firestore'; // For server-side Firestore
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'; // Import getFirestore AND FieldValue
 import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Firebase Admin SDK
 // import { APP_NAME } from '@/lib/constants'; // Removed: 'APP_NAME' is not used in this file
 
@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Initialize Firestore for usage logging
-    const adminApp = getAdminApp();
-    const adminFirestore = adminApp ? getFirestore(adminApp) : null;
+    const adminApp = getAdminApp(); // Get the Firebase Admin app instance
+    const adminFirestore = adminApp ? getFirestore(adminApp) : null; // Get Firestore instance only if app is not null
 
     // Prepare for streaming response
     const encoder = new TextEncoder();
@@ -51,14 +51,14 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`ERROR: ${error.message || 'An unexpected error occurred during streaming.'}`));
         } finally {
           // Log usage after streaming completes
-          if (adminFirestore && fullResponseContent) {
+          if (adminFirestore && fullResponseContent) { // Ensure adminFirestore is not null
             try {
               const userUsageRef = adminFirestore.collection('users').doc(userId);
-              // Use `admin.firestore.FieldValue.increment` instead of `getFirestore().FieldValue.increment`
+              // Use FieldValue directly from firebase-admin/firestore AFTER checking adminFirestore
               await userUsageRef.set({
                 lastActivity: new Date().toISOString(),
-                chatCount: getFirestore(adminApp).FieldValue.increment(1), // Correct usage for admin firestore FieldValue
-                [`modelUsage.${selectedAIProvider.id}.count`]: getFirestore(adminApp).FieldValue.increment(1),
+                chatCount: FieldValue.increment(1), // Correct usage for admin firestore FieldValue
+                [`modelUsage.${selectedAIProvider.id}.count`]: FieldValue.increment(1),
                 // TODO: Implement token and cost estimation for more granular logging
               }, { merge: true });
               console.log(`Usage logged for user ${userId} with model ${selectedAIProvider.id}`);
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     return new NextResponse(readableStream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8', // Or 'text/event-stream' for SSE if desired
+        'Content-Type': 'text/plain; charset=utf-8',
       },
     });
   } catch (error: any) {
