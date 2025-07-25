@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useContext, createContext } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, getFirestore } from 'firebase/firestore'; // Import Firestore functions
-import { auth, firebaseApp } from '@/lib/firebase'; // Ensure firebaseApp is exported from lib/firebase
+import { doc, onSnapshot, getFirestore, getApps, getApp, initializeFirestore } from 'firebase/firestore'; // Added getApps, getApp, initializeFirestore
+import { auth, firebaseApp as exportedFirebaseApp } from '@/lib/firebase'; // Attempt to import as exportedFirebaseApp, fallback if not explicitly exported
 
 interface UserProfile {
   uid: string;
@@ -30,8 +30,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (authenticatedUser) => {
       setFirebaseUser(authenticatedUser);
       if (authenticatedUser) {
-        // If user is authenticated, set up a Firestore listener for their profile
-        const db = getFirestore(firebaseApp);
+        // Ensure Firestore is initialized if not already
+        let appInstance;
+        if (getApps().length === 0) {
+          // This case should ideally not happen if firebase.ts initializes the app,
+          // but as a fallback, ensure the app is initialized.
+          // This block might indicate an issue with firebase.ts's initialization being too late or not called.
+          // Assuming firebase.ts's default export handles it implicitly for `auth`, `db` etc.
+          // For explicit app instance, we rely on getApp() once initialized.
+          console.error("Firebase app not initialized when useAuth started. Check lib/firebase.ts initialization.");
+          setLoading(false);
+          setUser(null);
+          return;
+        } else {
+          appInstance = getApp(); // Get the default initialized app
+        }
+
+        const db = getFirestore(appInstance); // Use the retrieved app instance
         const userDocRef = doc(db, 'users', authenticatedUser.uid);
 
         const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
