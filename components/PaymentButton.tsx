@@ -1,90 +1,65 @@
 // components/PaymentButton.tsx
-// Updated with the correct Stripe Price ID for Test Mode.
-
 'use client';
 
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadStripe } from '@stripe/stripe-js';
-import React from 'react';
-
-const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-
-const stripePromise = STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(STRIPE_PUBLISHABLE_KEY)
-  : null;
 
 interface PaymentButtonProps {
-  // The priceId prop will now be passed dynamically from HomePage,
-  // but we ensure it's used correctly here.
-  priceId: string;
-  userId?: string;
-  userEmail?: string;
-  buttonText?: string;
+  priceId: string; // The Stripe Price ID for the product
+  children: React.ReactNode; // Content inside the button (e.g., "Purchase")
 }
 
-export default function PaymentButton({ priceId, userId, userEmail, buttonText = "Get Power Access — $99/mo" }: PaymentButtonProps) {
+export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, children }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleCheckout = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      if (!STRIPE_PUBLISHABLE_KEY) {
-        console.error('Stripe Publishable Key is missing from environment variables.');
-        alert('Payment system configuration error. Please contact support.');
-        return;
-      }
-
-      const stripe = await stripePromise;
-
-      if (!stripe) {
-        console.error('Stripe.js failed to load, even with a key. Check console for details.');
-        alert('Payment system is not available. Please try again later.');
-        return;
-      }
-
+      // Call your Next.js API route to create a Stripe checkout session
       const response = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          // Use the dynamic priceId passed to the component
-          priceId: priceId,
-          quantity: 1,
-          userId: userId || 'anonymous',
-          userEmail: userEmail || 'anonymous@example.com',
-        }),
+        body: JSON.stringify({ priceId }),
       });
 
-      const session = await response.json();
-
-      if (response.ok && session.url) {
-        router.push(session.url);
-      } else {
-        console.error('Failed to create Stripe Checkout Session:', session.error || session.details);
-        alert('Payment system temporarily unavailable. Please check console for details.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session.');
       }
-    } catch (error) {
-      console.error('An unexpected error occurred during checkout:', error);
-      alert('An unexpected error occurred during payment. Please try again.');
+
+      const { url } = await response.json();
+      if (url) {
+        // Redirect to Stripe Checkout page
+        window.location.assign(url);
+      } else {
+        throw new Error('No checkout URL received from API.');
+      }
+    } catch (err: any) {
+      console.error('Stripe checkout error:', err);
+      setError(`Payment system temporarily unavailable: ${err.message}. Please try again later.`);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <button
-      onClick={handleCheckout}
-      style={{
-        width: '100%',
-        padding: '16px',
-        fontSize: '18px',
-        background: '#22c55e',
-        border: 'none',
-        borderRadius: '8px',
-        color: 'white',
-        cursor: 'pointer',
-        fontWeight: 'bold'
-      }}
-    >
-      {buttonText}
-    </button>
+    <div>
+      <button
+        onClick={handleCheckout}
+        disabled={loading}
+        className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+      >
+        {loading ? 'Processing...' : children}
+      </button>
+      {error && (
+        <p className="mt-2 text-red-600 text-sm">{error}</p>
+      )}
+    </div>
   );
-}
+};
