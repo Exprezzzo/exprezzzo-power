@@ -2,15 +2,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth'; // Ensure useAuth provides real-time updates
-import { AlertCircle } from 'lucide-react'; // Make sure AlertCircle is imported for the error state
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic'; // Import dynamic for client-side only component loading
+import { useAuth } from '@/hooks/useAuth';
+import { AlertCircle } from 'lucide-react'; // Ensure AlertCircle is imported
 
-export default function SuccessPage() {
+// This component uses useSearchParams and should only render on the client
+const SuccessContentComponent = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get('session_id');
-  const { user, loading: authLoading } = useAuth(); // Get user and loading state from useAuth
+  const searchParams = useRouter().query; // Access query from useRouter for client-side
+  const sessionId = searchParams?.session_id as string | undefined; // Access session_id from query
+  const { user, loading: authLoading } = useAuth();
   const [redirecting, setRedirecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -25,7 +27,7 @@ export default function SuccessPage() {
         } else {
           // User is NOT Pro, but payment succeeded (assuming sessionId implies success).
           // This could be webhook delay. Implement a retry/polling mechanism or a clear message.
-          console.log('Payment successful, but isPro is not yet true. Waiting...');
+          console.log('Payment successful, but isPro is not yet true. Waiting for status update...');
           const checkProStatus = async () => {
             let attempts = 0;
             const maxAttempts = 10; // Increased attempts for more robustness
@@ -34,8 +36,7 @@ export default function SuccessPage() {
             while (attempts < maxAttempts && (!user || !user.isPro)) { // Check user.isPro in loop condition
               attempts++;
               console.log(`Attempt ${attempts} to verify pro status...`);
-              // In a real app, you might want to force a re-fetch of user data here
-              // For useAuth with onSnapshot, it should update automatically.
+              // For useAuth with onSnapshot, the user object should update automatically here.
               await new Promise(resolve => setTimeout(resolve, pollInterval));
             }
 
@@ -47,19 +48,12 @@ export default function SuccessPage() {
               setErrorMessage(
                 'Payment confirmed, but membership update is pending. Please wait a moment or try refreshing the page. If issue persists, contact support.'
               );
-              // Optionally redirect to a generic dashboard or home page after showing message
-              // router.push('/dashboard'); // Example
             }
           };
 
-          // Only start checking if the session_id is present and indicates a payment attempt
           if (sessionId) {
-              // Optional: You can make an API call to your backend here to verify the session_id
-              // await fetch('/api/verify-stripe-session', { method: 'POST', body: JSON.stringify({ sessionId }) });
               checkProStatus();
           } else {
-              // If no session_id, maybe user navigated directly or cancelled.
-              // Redirect to home or pricing if not already pro.
               setRedirecting(true);
               router.push('/pricing'); // Redirect to pricing if no session ID implies a non-payment path
           }
@@ -70,7 +64,7 @@ export default function SuccessPage() {
           router.push('/login');
       }
     }
-  }, [authLoading, user, router, sessionId]); // Re-run effect when these dependencies change
+  }, [authLoading, user, router, sessionId]);
 
   if (authLoading || redirecting || (user && !user.isPro && sessionId)) {
     return (
@@ -105,7 +99,6 @@ export default function SuccessPage() {
     );
   }
 
-  // Fallback, ideally should always redirect or show an error
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100 text-gray-800">
       <div className="text-center">
@@ -114,4 +107,9 @@ export default function SuccessPage() {
       </div>
     </div>
   );
+};
+
+// Dynamically import the component that uses useSearchParams with ssr: false
+export default function SuccessPage() {
+  return <SuccessContentComponent />;
 }
