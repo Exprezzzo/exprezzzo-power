@@ -3,81 +3,164 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase'; // Ensure this is your client-side Firebase auth instance
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth'; // Assuming useAuth is properly implemented with signIn and resetPassword
+import { ArrowLeft, Mail, Lock, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { signIn, resetPassword } = useAuth(); // Assuming useAuth provides signIn and resetPassword methods
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [resetMode, setResetMode] = useState(false); // State to toggle password reset form
+  const [resetSent, setResetSent] = useState(false); // State to confirm reset email sent
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setError('');
     setLoading(true);
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Login successful, user is automatically logged in.
-      // Redirect to playground or dashboard
-      router.push('/playground'); // Or the page you want them to land on after login
+      if (resetMode) {
+        await resetPassword(email);
+        setResetSent(true);
+      } else {
+        await signIn(email, password);
+        router.push('/playground'); // Redirect to playground on successful login
+      }
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Failed to log in. Please check your credentials.");
+      setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black text-white">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md border border-gray-700">
-        <h1 className="text-3xl font-bold text-center mb-6 text-blue-400">Login to Exprezzzo Power</h1>
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-300 text-sm font-bold mb-2">
-              Email:
-            </label>
-            <input
-              type="email"
-              id="email"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 text-white"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label htmlFor="password" className="block text-gray-300 text-sm font-bold mb-2">
-              Password:
-            </label>
-            <input
-              type="password"
-              id="password"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 text-white"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          {error && (
-            <p className="text-red-500 text-xs italic mb-4">{error}</p>
+    <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Back button */}
+        <Link
+          href="/"
+          className="inline-flex items-center text-gray-400 hover:text-white mb-8"
+        >
+          <ArrowLeft size={20} className="mr-2" />
+          Back to home
+        </Link>
+
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+            Exprezzzo Power
+          </h1>
+          <p className="text-gray-400 mt-2">
+            {resetMode ? 'Reset your password' : 'Sign in to your account'}
+          </p>
+        </div>
+
+        {/* Form */}
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800">
+          {resetSent ? (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-8 h-8 text-green-400" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Check your email</h2>
+              <p className="text-gray-400 mb-6">
+                We've sent a password reset link to {email}
+              </p>
+              <button
+                onClick={() => {
+                  setResetMode(false);
+                  setResetSent(false);
+                }}
+                className="text-blue-400 hover:text-blue-300"
+              >
+                Back to login
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              {!resetMode && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500 transition-colors"
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-400">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-3 rounded-lg font-semibold transition-all"
+              >
+                {loading ? 'Processing...' : resetMode ? 'Send Reset Email' : 'Sign In'}
+              </button>
+
+              {!resetMode && (
+                <button
+                  type="button"
+                  onClick={() => setResetMode(true)}
+                  className="w-full text-center text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Forgot your password?
+                </button>
+              )}
+            </form>
           )}
-          <div className="flex items-center justify-between">
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors duration-200"
-              disabled={loading}
-            >
-              {loading ? 'Logging In...' : 'Login'}
-            </button>
-            <Link href="/signup" className="inline-block align-baseline font-bold text-sm text-blue-400 hover:text-blue-300">
-              Don't have an account? Sign Up
-            </Link>
-          </div>
-        </form>
+
+          {!resetMode && !resetSent && (
+            <div className="mt-6 text-center text-gray-400">
+              Don't have an account?{' '}
+              <Link href="/signup" className="text-blue-400 hover:text-blue-300">
+                Sign up for free
+              </Link>
+            </div>
+          )}
+
+          {resetMode && !resetSent && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setResetMode(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                Back to login
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
