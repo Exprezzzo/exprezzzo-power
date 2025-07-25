@@ -29,7 +29,6 @@ export default function AIPlayground() {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
-  // Removed apiKey state as it should come from user object or backend
 
   const availableModels = [
     { id: 'gpt-4o', name: 'GPT-4o', icon: <Brain size={16} /> },
@@ -55,7 +54,7 @@ export default function AIPlayground() {
       }
       // If user exists AND isPro, they stay on this page.
     }
-  }, [user, loading, router]); // Depend on user, loading, and router for reactivity
+  }, [user, loading, router]);
 
   // Show loading or redirecting state while auth is being processed
   if (loading || (!user && !loading) || (user && !user.isPro && !loading)) {
@@ -143,27 +142,47 @@ export default function AIPlayground() {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Dummy functions for UI elements not yet connected to backend
-  const handleFileUpload = () => {
-    alert('File upload not yet implemented.');
+  // NEW: Sidebar Button Functions
+  const handleNewChat = () => {
+    setMessages([]); // Clear chat history
+    setInput('');    // Clear input
+    setSidebarOpen(false); // Close sidebar
+    // Optional: Reset model to default if desired
   };
 
-  const handleGenerateKey = () => {
-    alert('API key generation not yet implemented.');
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // TODO: Implement actual file upload to Firebase Storage or a backend API
+    console.log('File selected for upload:', file.name);
+    alert(`File upload is being implemented! Selected: ${file.name}`);
+    // You would typically upload the file here, e.g.:
+    // const storageRef = ref(storage, `user_files/${user.uid}/${file.name}`);
+    // await uploadBytes(storageRef, file);
+    // Then perhaps process the file for RAG or Q&A
   };
 
-  const handleViewUsage = () => {
-    alert('Usage tracking not yet implemented.');
+  const handleAPIKeys = () => {
+    router.push('/api-keys'); // Navigate to API Keys page (you'll need to create app/api-keys/page.tsx)
+    setSidebarOpen(false);
+  };
+
+  const handleUsage = () => {
+    router.push('/usage'); // Navigate to Usage page (you'll need to create app/usage/page.tsx)
+    setSidebarOpen(false);
   };
 
   const handlePricing = () => {
     router.push('/pricing'); // Redirect to pricing page
+    setSidebarOpen(false);
   };
 
-  const handleHistorySelect = (historyMessages: Message[]) => {
-    setMessages(historyMessages);
-    setSidebarOpen(false); // Close sidebar after selecting history
+  const handleChatHistory = () => {
+    router.push('/chat-history'); // Navigate to Chat History page (you'll need to create app/chat-history/page.tsx)
+    setSidebarOpen(false);
   };
+
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -182,42 +201,37 @@ export default function AIPlayground() {
         <nav>
           <ul>
             <li className="mb-4">
-              <a href="#" className="flex items-center text-lg hover:text-blue-400">
+              <button onClick={handleNewChat} className="flex items-center text-lg hover:text-blue-400 w-full text-left">
                 <Zap size={20} className="mr-3" /> New Chat
-              </a>
+              </button>
             </li>
             <li className="mb-4">
-              <a href="#" onClick={handleFileUpload} className="flex items-center text-lg hover:text-blue-400">
-                <Upload size={20} className="mr-3" /> Upload Document
-              </a>
+              <label className="flex items-center text-lg hover:text-blue-400 cursor-pointer w-full text-left">
+                <Upload size={20} className="mr-3" />
+                Upload Document
+                {/* Hidden input for file selection */}
+                <input type="file" onChange={handleFileUpload} className="hidden" accept=".pdf,.txt,.md" />
+              </label>
             </li>
             <li className="mb-4">
-              <a href="#" onClick={handleGenerateKey} className="flex items-center text-lg hover:text-blue-400">
+              <button onClick={handleAPIKeys} className="flex items-center text-lg hover:text-blue-400 w-full text-left">
                 <Key size={20} className="mr-3" /> API Keys
-              </a>
+              </button>
             </li>
             <li className="mb-4">
-              <a href="#" onClick={handleViewUsage} className="flex items-center text-lg hover:text-blue-400">
+              <button onClick={handleUsage} className="flex items-center text-lg hover:text-blue-400 w-full text-left">
                 <Activity size={20} className="mr-3" /> Usage
-              </a>
+              </button>
             </li>
             <li className="mb-4">
-              <a href="#" onClick={handlePricing} className="flex items-center text-lg hover:text-blue-400">
+              <button onClick={handlePricing} className="flex items-center text-lg hover:text-blue-400 w-full text-left">
                 <DollarSign size={20} className="mr-3" /> Pricing
-              </a>
+              </button>
             </li>
             <li className="mb-4">
-              <a href="#" className="flex items-center text-lg hover:text-blue-400">
+              <button onClick={handleChatHistory} className="flex items-center text-lg hover:text-blue-400 w-full text-left">
                 <History size={20} className="mr-3" /> Chat History
-              </a>
-              {/* Example of dynamic history, will be replaced with actual data */}
-              <ul className="ml-8 mt-2 text-sm">
-                <li className="mb-2">
-                  <a href="#" onClick={() => handleHistorySelect([{ role: 'user', content: 'What is Next.js?' }, { role: 'assistant', content: 'Next.js is a React framework.' }])} className="hover:text-blue-300">
-                    Next.js Info
-                  </a>
-                </li>
-              </ul>
+              </button>
             </li>
           </ul>
         </nav>
