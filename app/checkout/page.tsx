@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react'; // Added Suspense
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; // Keep useSearchParams here
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { ArrowLeft, CreditCard, Shield, Check, Mail, Lock, AlertCircle } from 'lucide-react'; // Ensure all icons are imported
@@ -12,14 +12,14 @@ import dynamic from 'next/dynamic';
 // It's a named export, so .then(mod => mod.PaymentButton) is correct.
 const PaymentButton = dynamic(
   () => import('@/components/PaymentButton').then(mod => mod.PaymentButton), // Correctly importing named export
-  { ssr: false }
+  { ssr: false } // Crucial: This ensures the component is only rendered on the client
 );
 
-// This component directly uses useSearchParams, so it MUST be inside a Suspense boundary
+// This is the component that uses useSearchParams and the main logic
 function CheckoutContent() {
   const router = useRouter();
-  const searchParams = useSearchParams(); // Correctly used within a client component wrapped by Suspense
-  const { user, signIn, signUp } = useAuth(); // Assuming useAuth provides signIn and signUp
+  const searchParams = useSearchParams(); // This hook requires a Suspense boundary higher up
+  const { user, signIn, signUp } = useAuth();
 
   const plan = searchParams.get('plan') || 'power';
   const period = searchParams.get('period') || 'monthly';
@@ -259,7 +259,7 @@ function CheckoutContent() {
               <span className="text-sm">Secure checkout powered by Stripe</span>
             </div>
 
-            <p className="text-xs text-gray-500 text-center mt-4">
+            <p className className="text-xs text-gray-500 text-center mt-4">
               By purchasing, you agree to our{' '}
               <Link href="/terms" className="text-blue-400 hover:underline">
                 Terms of Service
@@ -273,5 +273,14 @@ function CheckoutContent() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap the content that uses useSearchParams in Suspense
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white"><p>Loading checkout...</p></div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
