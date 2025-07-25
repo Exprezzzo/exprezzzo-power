@@ -1,9 +1,9 @@
 // app/api/chat/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { allAIProviders } from '@/lib/ai-providers'; // Correctly import allAIProviders
+import { allAIProviders } from '@/lib/ai-providers';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'; // Import getFirestore AND FieldValue
 import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Firebase Admin SDK
-// import { APP_NAME } from '@/lib/constants'; // Removed: 'APP_NAME' is not used in this file
+// APP_NAME import removed as it was unused in this file
 
 export const runtime = 'nodejs'; // Explicitly set to Node.js for AI SDKs
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`ERROR: ${error.message || 'An unexpected error occurred during streaming.'}`));
         } finally {
           // Log usage after streaming completes
-          if (adminFirestore && fullResponseContent) { // Ensure adminFirestore is not null
+          if (adminFirestore && fullResponseContent) { // Ensure adminFirestore is not null before using it
             try {
               const userUsageRef = adminFirestore.collection('users').doc(userId);
               // Use FieldValue directly from firebase-admin/firestore AFTER checking adminFirestore
