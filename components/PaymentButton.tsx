@@ -11,7 +11,7 @@ interface PaymentButtonProps {
   userEmail?: string | null; // Optional: Pass user email for customer linking
 }
 
-const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonText, userId, userEmail }) => {
+export const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonText, userId, userEmail }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -44,7 +44,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonText, user
       }
     } catch (err: any) {
       console.error('Stripe checkout error:', err);
-      setError(`Payment system temporarily unavailable: ${err.message}. Please try again later.`);
+      setError(`Payment system temporarily unavailable: ${err.message}. Please verify your Stripe API keys and Price IDs, and ensure you are logged in.`);
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonText, user
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+        className="px-8 py-4 rounded-lg font-semibold text-lg transition-all bg-blue-600 hover:bg-blue-700 text-white" // Combined with provided styling
       >
         {loading ? 'Processing...' : buttonText}
       </button>
@@ -66,4 +66,4 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({ priceId, buttonText, user
   );
 };
 
-export default PaymentButton; // Changed to default export
+// This is now a named export to match app/page.tsx and app/pricing/page.tsx dynamic imports
