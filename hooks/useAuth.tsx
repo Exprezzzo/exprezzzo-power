@@ -1,95 +1,83 @@
 // hooks/useAuth.tsx
-// Corrected: Renamed from .ts to .tsx to allow JSX.
-// Enhanced: Includes full Firebase Auth methods (signIn, signUp, Google, etc.).
+'use client';
 
-'use client'; // This directive is necessary for client-side hooks and JSX in App Router.
+import { useState, useEffect, useContext, createContext } from 'react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, onSnapshot, getFirestore } from 'firebase/firestore'; // Import Firestore functions
+import { auth, firebaseApp } from '@/lib/firebase'; // Ensure firebaseApp is exported from lib/firebase
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail, // For password reset (not magic link)
-  GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase'; // Import client-side Firebase auth instance.
-
-// Define the shape of our authentication context
-interface AuthContextType {
-  user: User | null; // Firebase User object
-  loading: boolean; // True while checking auth state
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  // Add isPro here later if needed directly in context from user profile
+interface UserProfile {
+  uid: string;
+  email: string | null;
+  isPro: boolean; // This is the crucial field
+  // Add other user profile fields as needed
 }
 
-// Create the Auth Context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextType {
+  user: UserProfile | null;
+  loading: boolean;
+  firebaseUser: FirebaseUser | null; // Keep original FirebaseUser object
+}
 
-// AuthProvider Component: Wraps your app to provide auth context
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true, firebaseUser: null });
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (authenticatedUser) => {
+      setFirebaseUser(authenticatedUser);
+      if (authenticatedUser) {
+        // If user is authenticated, set up a Firestore listener for their profile
+        const db = getFirestore(firebaseApp);
+        const userDocRef = doc(db, 'users', authenticatedUser.uid);
+
+        const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            setUser({
+              uid: authenticatedUser.uid,
+              email: authenticatedUser.email,
+              isPro: userData.isPro || false, // Default to false if not set
+              ...userData // Merge all other user data
+            });
+          } else {
+            // User document doesn't exist yet, create a basic one
+            setUser({
+              uid: authenticatedUser.uid,
+              email: authenticatedUser.email,
+              isPro: false,
+            });
+            // Optionally, create the user document in Firestore if it doesn't exist
+            // setDoc(userDocRef, { email: authenticatedUser.email, isPro: false }, { merge: true });
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error("Error listening to user document:", error);
+          setLoading(false);
+          setUser(null); // Treat as no user if there's a firestore error
+        });
+
+        // Clean up Firestore listener on unmount or user change
+        return () => unsubscribeFirestore();
+      } else {
+        // No authenticated user
+        setUser(null);
+        setLoading(false);
+      }
     });
-    return unsubscribe;
-  }, []);
 
-  // Authentication methods
-  const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const signUp = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  const logout = async () => {
-    await signOut(auth);
-  };
-
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
-
-  const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
-  };
-
-  // Memoize the context value to prevent unnecessary re-renders
-  const contextValue: AuthContextType = {
-    user,
-    loading,
-    signIn,
-    signUp,
-    logout,
-    signInWithGoogle,
-    resetPassword
-  };
+    // Clean up Auth state listener on unmount
+    return () => unsubscribeAuth();
+  }, []); // Empty dependency array means this effect runs once on mount
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={{ user, loading, firebaseUser }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-// Custom hook to easily consume the auth context
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export const useAuth = () => useContext(AuthContext);
