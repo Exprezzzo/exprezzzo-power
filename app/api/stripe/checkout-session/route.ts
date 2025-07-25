@@ -19,15 +19,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (!userId) {
-      // This API route requires a userId to link payment to a user.
-      // Ensure the frontend sends it or handle unauthenticated users differently.
       console.error('Checkout session creation failed: userId is missing.');
       return NextResponse.json({ error: 'Authentication required for checkout.' }, { status: 401 });
     }
 
     const adminApp = getAdminApp(); // Get the Firebase Admin app instance
     if (!adminApp) {
-      throw new Error('Firebase Admin App not initialized.');
+      console.error("Firebase Admin App not initialized, cannot create Stripe customer.");
+      return NextResponse.json({ error: "Server configuration error. Please try again later." }, { status: 500 });
     }
     const adminFirestore = getFirestore(adminApp);
 
