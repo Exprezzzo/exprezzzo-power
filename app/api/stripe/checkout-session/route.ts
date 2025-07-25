@@ -1,74 +1,62 @@
 // app/api/stripe/checkout-session/route.ts
-// Corrected: Uses dynamic price creation (price_data) instead of a pre-defined Stripe Price ID.
+// Ensure you have `stripe` imported and initialized from 'stripe'.
+// Also, `NextRequest` and `NextResponse` from 'next/server'.
 
-import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/firebase'; // Assuming Firebase auth is initialized
+import { collection, getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // Import Firestore functions
 
-// Initialize Stripe with the Secret Key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2024-04-10', // Use your Stripe API version (check your Stripe dashboard)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-06-20', // Use a recent API version
 });
 
 export async function POST(req: NextRequest) {
   try {
-    // userId and email might come from your frontend if user is logged in
-    const { userId, email } = await req.json();
+    const { priceId } = await req.json();
+    const user = auth.currentUser; // Get current authenticated user
 
-    // --- Basic Input Validation ---
-    // (Optional: You can add more checks for userId/email if needed)
-
-    // Construct the base URL using headers for reliability in Vercel serverless environment.
-    const scheme = req.headers.get('x-forwarded-proto') || 'https'; // Default to https
-    const host = req.headers.get('host');
-
-    let deployedBaseUrl;
-    if (host) {
-      deployedBaseUrl = `${scheme}://${host}`;
-    } else if (process.env.VERCEL_URL) {
-      deployedBaseUrl = `https://${process.env.VERCEL_URL}`;
-    } else {
-      deployedBaseUrl = 'http://localhost:3000'; // Fallback for local development
-      console.warn("Using localhost for base URL - ensure this is only for local dev.");
+    if (!user) {
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
-    const successUrl = `${deployedBaseUrl}/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${deployedBaseUrl}/cancel`;
+    const firestore = getFirestore();
+    const userRef = doc(firestore, 'users', user.uid);
+    const userDoc = await getDoc(userRef);
+    let customerId: string | undefined;
 
-    // --- KEY CHANGE: Use price_data for dynamic price creation ---
+    if (userDoc.exists() && userDoc.data()?.stripeCustomerId) {
+      customerId = userDoc.data().stripeCustomerId;
+    } else {
+      // Create a new Stripe customer if one doesn't exist for the user
+      const customer = await stripe.customers.create({
+        email: user.email!,
+        metadata: { firebaseUid: user.uid },
+      });
+      customerId = customer.id;
+      // Save the new Stripe customer ID to Firestore
+      await setDoc(userRef, { stripeCustomerId: customer.id }, { merge: true });
+    }
+
+    const host = req.headers.get('host');
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'; // Use https in production
+
     const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
       line_items: [
         {
-          price_data: { // Define the price directly here
-            currency: 'usd',
-            product_data: {
-              name: 'Exprezzzo Power User Access', // Name of your product
-              description: 'Premium access to all Exprezzzo AI features ($97/month)', // Product description
-              images: [`${deployedBaseUrl}/ExprezzzoLogo.png`], // Optional: URL to your product image (ensure it's in /public)
-            },
-            unit_amount: 100, // Price in cents: $1.00
-            recurring: {
-              interval: 'month', // Monthly subscription
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
-      mode: 'subscription', // This must be 'subscription' for recurring payments
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: email, // Pre-fill email if provided
-      client_reference_id: userId, // Link to your internal user ID
-      allow_promotion_codes: true, // Allow promo codes
-      // Add any other necessary Stripe Checkout Session parameters as needed
+      success_url: `${protocol}://${host}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${protocol}://${host}/pricing`, // Or your relevant pricing page
     });
 
-    return NextResponse.json({ sessionId: session.id, url: session.url }, { status: 200 });
-
+    return NextResponse.json({ url: session.url });
   } catch (error: any) {
-    console.error('Stripe Checkout Session creation failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to create checkout session', details: error.message },
-      { status: 500 }
-    );
+    console.error('Error creating checkout session:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
