@@ -1,35 +1,70 @@
 // app/api/chat/route.ts
-// Real AI integration with streaming responses via Server-Sent Events (SSE).
-
 import { NextRequest, NextResponse } from 'next/server';
-import { streamChat, estimateTokens, getCustomerPrice } from '@/lib/ai-providers';
+import { allAIProviders } from '@/lib/ai-providers'; // Correctly import allAIProviders
+import { getFirestore } from 'firebase-admin/firestore'; // For server-side Firestore
+import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Firebase Admin SDK
+import { APP_NAME } from '@/lib/constants'; // Import APP_NAME from constants
 
 export const runtime = 'nodejs'; // Explicitly set to Node.js for AI SDKs
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { messages, model } = await request.json(); // Expect full messages array now
+    const { model, messages, userId } = await req.json();
 
-    if (!messages || messages.length === 0) {
-      return new Response('Messages array required', { status: 400 });
+    if (!model || !messages || !Array.isArray(messages) || messages.length === 0) {
+      return NextResponse.json({ error: 'Invalid request: model and messages are required.' }, { status: 400 });
     }
 
-    const prompt = messages[messages.length - 1].content;
-    console.log(`[AI Chat API] Received prompt: "${prompt}" for model: "${model}"`);
+    if (!userId) {
+      return NextResponse.json({ error: 'Authentication required for chat.' }, { status: 401 });
+    }
 
-    const textEncoder = new TextEncoder();
+    const selectedAIProvider = allAIProviders.find(provider => provider.id === model);
+
+    if (!selectedAIProvider) {
+      return NextResponse.json({ error: `AI provider "${model}" not found or API key missing.` }, { status: 404 });
+    }
+
+    // Initialize Firestore for usage logging
+    const adminApp = getAdminApp();
+    const adminFirestore = adminApp ? getFirestore(adminApp) : null;
+
+    // Prepare for streaming response
+    const encoder = new TextEncoder();
     const readableStream = new ReadableStream({
       async start(controller) {
+        let fullResponseContent = '';
+        let firstChunk = true;
+
         try {
-          for await (const chunk of streamChat(messages, model)) {
-            // Each chunk is an object { type: 'content', content: '...', model: '...' }
-            // or { type: 'error', error: '...' }
-            controller.enqueue(textEncoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          for await (const chunk of selectedAIProvider.streamChatCompletion(messages)) {
+            if (firstChunk) {
+              // Send initial metadata if needed (e.g., model name)
+              controller.enqueue(encoder.encode(JSON.stringify({ type: 'metadata', model: selectedAIProvider.name }) + '\n'));
+              firstChunk = false;
+            }
+            controller.enqueue(encoder.encode(chunk));
+            fullResponseContent += chunk;
           }
-        } catch (error) {
-          console.error("Streaming error in API route:", error);
-          controller.enqueue(textEncoder.encode(`data: ${JSON.stringify({ type: 'error', error: error instanceof Error ? error.message : String(error) })}\n\n`));
+        } catch (error: any) {
+          console.error(`Streaming error from AI provider (${selectedAIProvider.id}):`, error);
+          controller.enqueue(encoder.encode(`ERROR: ${error.message || 'An unexpected error occurred during streaming.'}`));
         } finally {
+          // Log usage after streaming completes
+          if (adminFirestore && fullResponseContent) {
+            try {
+              const userUsageRef = adminFirestore.collection('users').doc(userId);
+              await userUsageRef.set({
+                lastActivity: new Date().toISOString(),
+                chatCount: (getFirestore().FieldValue.increment(1)), // Increment chat count
+                [`modelUsage.${selectedAIProvider.id}.count`]: (getFirestore().FieldValue.increment(1)),
+                // TODO: Implement token and cost estimation for more granular logging
+              }, { merge: true });
+              console.log(`Usage logged for user ${userId} with model ${selectedAIProvider.id}`);
+            } catch (logError) {
+              console.error('Failed to log chat usage:', logError);
+            }
+          }
           controller.close();
         }
       },
@@ -37,20 +72,11 @@ export async function POST(request: NextRequest) {
 
     return new NextResponse(readableStream, {
       headers: {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache, no-transform', // Important for streaming
-        'Connection': 'keep-alive',
+        'Content-Type': 'text/plain; charset=utf-8', // Or 'text/event-stream' for SSE if desired
       },
     });
-
   } catch (error: any) {
-    console.error('Chat API error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    console.error('Error in chat API route:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
