@@ -3,25 +3,31 @@
 
 import Link from 'next/link';
 import Image from 'next/image'; // If you use an Image component
-import dynamic from 'next/dynamic'; // Only if you need other dynamic imports
+import dynamic from 'next/dynamic';
 import { ArrowRight, Zap, Brain, Sparkles, Shield } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth'; // Import useAuth to check user status
 
 // Dynamically import PaymentButton to ensure it's client-side rendered
-// This now correctly imports the default export of PaymentButton.tsx
 const PaymentButton = dynamic(
-  () => import('@/components/PaymentButton'), // Directly import the default export
-  { ssr: false } // Crucial: This ensures the component is only rendered on the client
+  () => import('@/components/PaymentButton').then(mod => mod.PaymentButton), // Correctly imports named export
+  { ssr: false }
 );
 
 export default function LandingPage() {
-  const isUserAuthenticated = false; // This would typically come from useAuth or server session check
-  // IMPORTANT: REPLACE 'price_YOUR_ACTUAL_ID' with YOUR ACTUAL Stripe Test Price ID!
-  const FOUNDING_PRICE_ID = 'price_YOUR_ACTUAL_ID'; // <<-- Replace with your actual Stripe Price ID for initial purchase
+  const { user, loading } = useAuth(); // Get user and loading state from useAuth
+  const isUserAuthenticated = !!user; // True if user object exists
 
-  // Note: If you want to use the useAuth hook here, you'd uncomment and implement it like this:
-  // import { useAuth } from '@/hooks/useAuth';
-  // const { user } = useAuth();
-  // const isUserAuthenticated = !!user; // Simple check if a user object exists
+  // ACTUAL Stripe Test Price ID for your Monthly Plan
+  const FOUNDING_PRICE_ID = 'price_1Ron5iHMIqbrm277EwcrZ1QD'; // <<-- This is your Monthly Plan Price ID
+
+  // Display loading state while authentication is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p>Loading application...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -68,25 +74,25 @@ export default function LandingPage() {
         </div>
 
         {/* Direct Purchase Section */}
-        <div className="mt-8 p-6 bg-gray-800 rounded-lg shadow-xl border border-gray-700 animate-fade-in-up delay-600">
+        <div className="max-w-md mx-auto bg-gray-900 rounded-xl p-8 border border-gray-800">
           <h2 className="text-2xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-gray-300 mb-6">Purchase a Power Plan instantly and gain full access.</p>
+          <p className="text-gray-400 mb-6">Purchase a Power Plan instantly and gain full access.</p>
 
-          {/* Pass user and email if authenticated */}
+          {/* Conditionally render PaymentButton or login/signup prompt */}
           {isUserAuthenticated ? (
-            <DynamicPaymentButton
+            <PaymentButton // Use PaymentButton directly here now as it's client-side due to dynamic import above
               priceId={FOUNDING_PRICE_ID}
               buttonText="Get Power Access Now — $97/mo"
-              // userId={user?.uid} // Uncomment and pass if using useAuth
-              // userEmail={user?.email} // Uncomment and pass if using useAuth
+              userId={user?.uid} // Pass userId from useAuth
+              userEmail={user?.email} // Pass userEmail from useAuth
             />
           ) : (
             // If not authenticated, prompt to login/signup first
             <div className="flex flex-col gap-3">
-              <Link href="/login" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+              <Link href="/login" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg text-center">
                 Login to Purchase
               </Link>
-              <Link href="/signup" className="text-blue-400 hover:text-blue-300 text-sm">
+              <Link href="/signup" className="text-blue-400 hover:text-blue-300 text-sm text-center">
                 Don't have an account? Sign up
               </Link>
             </div>
@@ -102,6 +108,5 @@ export default function LandingPage() {
         &copy; {new Date().getFullYear()} Exprezzzo Power. All rights reserved.
       </footer>
     </div>
-  </div>
-</div>
-);
+  );
+}
