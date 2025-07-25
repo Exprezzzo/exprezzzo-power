@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { allAIProviders } from '@/lib/ai-providers'; // Correctly import allAIProviders
 import { getFirestore } from 'firebase-admin/firestore'; // For server-side Firestore
 import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Firebase Admin SDK
-import { APP_NAME } from '@/lib/constants'; // Import APP_NAME from constants
+// import { APP_NAME } from '@/lib/constants'; // Removed: 'APP_NAME' is not used in this file
 
 export const runtime = 'nodejs'; // Explicitly set to Node.js for AI SDKs
 
@@ -54,10 +54,11 @@ export async function POST(req: NextRequest) {
           if (adminFirestore && fullResponseContent) {
             try {
               const userUsageRef = adminFirestore.collection('users').doc(userId);
+              // Use `admin.firestore.FieldValue.increment` instead of `getFirestore().FieldValue.increment`
               await userUsageRef.set({
                 lastActivity: new Date().toISOString(),
-                chatCount: (getFirestore().FieldValue.increment(1)), // Increment chat count
-                [`modelUsage.${selectedAIProvider.id}.count`]: (getFirestore().FieldValue.increment(1)),
+                chatCount: getFirestore(adminApp).FieldValue.increment(1), // Correct usage for admin firestore FieldValue
+                [`modelUsage.${selectedAIProvider.id}.count`]: getFirestore(adminApp).FieldValue.increment(1),
                 // TODO: Implement token and cost estimation for more granular logging
               }, { merge: true });
               console.log(`Usage logged for user ${userId} with model ${selectedAIProvider.id}`);
