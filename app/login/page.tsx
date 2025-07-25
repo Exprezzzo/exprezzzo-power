@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth'; // Assuming useAuth is properly implemented with signIn and resetPassword
-import { ArrowLeft, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, ArrowLeft } from 'lucide-react'; // Ensure all icons are imported
+import { APP_NAME } from '@/lib/constants'; // Import APP_NAME
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +32,13 @@ export default function LoginPage() {
         router.push('/playground'); // Redirect to playground on successful login
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      const errorMessages: { [key: string]: string } = {
+        'auth/user-not-found': 'No account found with this email address.',
+        'auth/wrong-password': 'Incorrect password. Please try again.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+      };
+      setError(errorMessages[err.code] || 'Failed to sign in. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -52,7 +59,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-            Exprezzzo Power
+            {APP_NAME}
           </h1>
           <p className="text-gray-400 mt-2">
             {resetMode ? 'Reset your password' : 'Sign in to your account'}
@@ -90,8 +97,8 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500 transition-colors"
-                    placeholder="you@example.com"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                    placeholder="your@email.com"
                     required
                   />
                 </div>
@@ -106,7 +113,7 @@ export default function LoginPage() {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-lg py-3 pl-10 pr-4 focus:outline-none focus:border-blue-500 transition-colors"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
                       placeholder="••••••••"
                       required
                     />
@@ -115,18 +122,25 @@ export default function LoginPage() {
               )}
 
               {error && (
-                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-400">{error}</p>
+                <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-3 flex items-start">
+                  <AlertCircle className="text-red-400 mr-2 flex-shrink-0 mt-0.5" size={16} />
+                  <span className="text-red-400 text-sm">{error}</span>
                 </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 py-3 rounded-lg font-semibold transition-all"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-700 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center"
               >
-                {loading ? 'Processing...' : resetMode ? 'Send Reset Email' : 'Sign In'}
+                {loading ? (
+                  <span>Processing...</span>
+                ) : (
+                  <>
+                    <LogIn size={20} className="mr-2" />
+                    Sign In
+                  </>
+                )}
               </button>
 
               {!resetMode && (
@@ -142,10 +156,13 @@ export default function LoginPage() {
           )}
 
           {!resetMode && !resetSent && (
-            <div className="mt-6 text-center text-gray-400">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-blue-400 hover:text-blue-300">
-                Sign up for free
+            <div className="mt-6 text-center">
+              <span className="text-gray-400">New to {APP_NAME}? </span>
+              <Link
+                href="/signup"
+                className="text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+              >
+                Create an account
               </Link>
             </div>
           )}
