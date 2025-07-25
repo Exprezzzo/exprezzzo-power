@@ -1,83 +1,115 @@
 // app/success/page.tsx
+'use client';
 
-'use client'; // This is a client component
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic'; // Import dynamic for client-side only component loading
+import { useAuth } from '@/hooks/useAuth';
+import { AlertCircle } from 'lucide-react'; // Ensure AlertCircle is imported
 
-import React, { useEffect, useState, Suspense } from 'react'; // Ensure Suspense is imported
-import { useRouter, useSearchParams } from 'next/navigation';
-
-// This component will use the search params and display the actual success content
-function SuccessContent() {
+// This component uses useSearchParams and should only render on the client
+const SuccessContentComponent = () => {
   const router = useRouter();
-  const searchParams = useSearchParams(); // This hook requires Suspense
-  const [message, setMessage] = useState('Verifying your payment...');
+  const searchParams = useRouter().query; // Access query from useRouter for client-side
+  const sessionId = searchParams?.session_id as string | undefined; // Access session_id from query
+  const { user, loading: authLoading } = useAuth();
+  const [redirecting, setRedirecting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const sessionId = searchParams.get('session_id');
+    // We need to wait for authentication state to be known and user data to be loaded
+    if (!authLoading) { // Only act once authentication state is known
+      if (user) {
+        if (user.isPro) {
+          // User is Pro, redirect to playground
+          setRedirecting(true);
+          router.push('/playground');
+        } else {
+          // User is NOT Pro, but payment succeeded (assuming sessionId implies success).
+          // This could be webhook delay. Implement a retry/polling mechanism or a clear message.
+          console.log('Payment successful, but isPro is not yet true. Waiting for status update...');
+          const checkProStatus = async () => {
+            let attempts = 0;
+            const maxAttempts = 10; // Increased attempts for more robustness
+            const pollInterval = 3000; // Poll every 3 seconds
 
-    if (sessionId) {
-      setMessage('Payment successful! Thank you for your purchase.');
-      console.log('Stripe Session ID:', sessionId);
-      // In a real app, you might:
-      // 1. Make an API call here to your own backend to verify this session server-side
-      //    (This provides an extra layer of security and updates your DB if webhook fails)
-      // 2. Redirect to a user dashboard after a short delay: setTimeout(() => router.push('/dashboard'), 3000);
-    } else {
-      setMessage('Payment verification in progress or no session ID found. Please check your email.');
-      // If no session ID, it might be a direct visit or an issue.
-      // Consider redirecting to homepage or a generic error page.
-      // router.push('/');
+            while (attempts < maxAttempts && (!user || !user.isPro)) { // Check user.isPro in loop condition
+              attempts++;
+              console.log(`Attempt ${attempts} to verify pro status...`);
+              // For useAuth with onSnapshot, the user object should update automatically here.
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+
+            // Re-check user.isPro after polling loop
+            if (user && user.isPro) {
+              setRedirecting(true);
+              router.push('/playground');
+            } else {
+              setErrorMessage(
+                'Payment confirmed, but membership update is pending. Please wait a moment or try refreshing the page. If issue persists, contact support.'
+              );
+            }
+          };
+
+          if (sessionId) {
+              checkProStatus();
+          } else {
+              setRedirecting(true);
+              router.push('/pricing'); // Redirect to pricing if no session ID implies a non-payment path
+          }
+        }
+      } else {
+          // No user, redirect to login
+          setRedirecting(true);
+          router.push('/login');
+      }
     }
-  }, [searchParams]);
+  }, [authLoading, user, router, sessionId]);
+
+  if (authLoading || redirecting || (user && !user.isPro && sessionId)) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-600 to-purple-800 text-white">
+        <div className="text-center">
+          <svg className="animate-spin h-10 w-10 text-white mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <h1 className="text-2xl font-bold">Processing your payment and setting up your account...</h1>
+          <p className="text-lg">Please do not close this page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-red-600 text-white">
+        <div className="text-center p-8 rounded-lg shadow-xl">
+          <AlertCircle size={48} className="mx-auto mb-4" />
+          <h1 className="text-3xl font-bold mb-4">Payment Processed, but Access Pending</h1>
+          <p className="text-lg mb-6">{errorMessage}</p>
+          <button
+            onClick={() => router.push('/pricing')}
+            className="px-6 py-3 bg-white text-red-700 rounded-md font-semibold hover:bg-gray-100 transition-colors"
+          >
+            Go to Pricing Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at top left, #1a1a2e, #0f0f1d, #000)',
-      color: 'white',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
-      padding: '20px'
-    }}>
-      <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '20px', color: '#22c55e' }}>
-        🎉 Payment Success!
-      </h1>
-      <p style={{ fontSize: '1.2rem', color: '#aaa', maxWidth: '600px', marginBottom: '40px' }}>
-        {message}
-      </p>
-      <button
-        onClick={() => router.push('/')}
-        style={{
-          padding: '12px 24px',
-          fontSize: '1rem',
-          background: '#3577ae',
-          border: 'none',
-          borderRadius: '8px',
-          color: 'white',
-          cursor: 'pointer',
-          fontWeight: 'bold'
-        }}
-      >
-        Go to Homepage
-      </button>
+    <div className="flex items-center justify-center h-screen bg-gray-100 text-gray-800">
+      <div className="text-center">
+        <p>An unexpected error occurred. Please try again or contact support.</p>
+        <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded">Go Home</button>
+      </div>
     </div>
   );
-}
+};
 
-// The main page component that wraps the content needing searchParams in Suspense
-export default function SuccessPageWrapper() {
-  return (
-    <Suspense fallback={
-      <div style={{
-        minHeight: '100vh', background: 'radial-gradient(circle at top left, #1a1a2e, #0f0f1d, #000)',
-        color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
-      }}>
-        Loading payment details...
-      </div>
-    }>
-      <SuccessContent />
-    </Suspense>
-  );
+// Dynamically import the component that uses useSearchParams with ssr: false
+export default function SuccessPage() {
+  return <SuccessContentComponent />;
 }

@@ -1,31 +1,37 @@
-// tailwind.config.js
-// Corrected to remove the 'plugins' property, relying solely on postcss.config.js for plugin definition.
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}', // Scan all files in app/
+    './pages/**/*.{js,ts,jsx,tsx,mdx}', // Scan all files in pages/
+    './components/**/*.{js,ts,jsx,tsx,mdx}', // Scan all files in components/
+    './hooks/**/*.{js,ts,jsx,tsx,mdx}', // Scan all files in hooks/ (if they contain JSX/TSX)
   ],
   theme: {
     extend: {
-      colors: {
-        'exprezzzo-red': '#ad0000',
-        'exprezzzo-blue': '#3577ae',
-        'exprezzzo-purple': '#6f009d',
-        'exprezzzo-gray': '#4a5568',
-        'exprezzzo-gold-start': '#FFD700',
-        'exprezzzo-gold-mid': '#FFA500',
-      },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':
           'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
+      animation: {
+        blob: 'blob 7s infinite',
+        'fade-in': 'fade-in 0.6s ease-out forwards',
+        'fade-in-delay': 'fade-in 0.6s ease-out 0.2s forwards',
+        'fade-in-delay-2': 'fade-in 0.6s ease-out 0.4s forwards',
+      },
+      keyframes: {
+        blob: {
+          '0%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+          '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+          '100%': { transform: 'translate(0px, 0px) scale(1)' },
+        },
+        'fade-in': {
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
     },
   },
-  // Removed the 'plugins' array from here to avoid conflict with PostCSS setup
-  // plugins: [], // This line is now removed
+  plugins: [],
 };
