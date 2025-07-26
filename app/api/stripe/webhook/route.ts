@@ -8,8 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin'; // Import getAdminApp, getAdminFirestore
 import { getAuth as getAdminAuth } from 'firebase-admin/auth'; // Import admin Auth
-import { FieldValue } from 'firebase-admin/firestore'; // Import FieldValue from admin SDK
-
+import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin'; // Import getAdminApp, getAdminFirestore
+import { getAuth as getAdminAuth } from 'firebase-admin/auth'; // Import admin Auth
+// Removed the unused FieldValue import
 // Phoenix v3.4: Explicitly set runtime for Node.js environment
 export const runtime = 'nodejs';
 
