@@ -5,7 +5,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import PaymentButton from '@/components/PaymentButton';
+import { PaymentButton } from '@/components/PaymentButton'; // Changed to named import
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
