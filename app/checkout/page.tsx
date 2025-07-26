@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation'; // Removed useRouter
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { PaymentButton } from '@/components/PaymentButton';
@@ -10,45 +10,11 @@ import { PaymentButton } from '@/components/PaymentButton';
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const priceId = searchParams.get('priceId');
-  // Removed: const router = useRouter(); - it was unused
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleCheckout = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/stripe/checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId,
-          userId: user?.uid,
-          userEmail: user?.email,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      setError(error instanceof Error ? error.message : 'Something went wrong');
-      setLoading(false);
-    }
-  };
+  // Remove the entire handleCheckout function - PaymentButton handles this internally
+  // Remove the error state - PaymentButton handles errors internally
 
   if (!priceId) {
     return (
@@ -76,16 +42,9 @@ function CheckoutContent() {
           </div>
         )}
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-900/50 rounded-lg">
-            <p className="text-red-300">{error}</p>
-          </div>
-        )}
-
         <div className="space-y-4">
           <PaymentButton
             priceId={priceId}
-            onClick={handleCheckout}
             loading={loading}
           />
           
