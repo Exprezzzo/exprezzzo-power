@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
+// Remove the unused import: import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 
 // Force Node.js runtime
 export const runtime = 'nodejs';
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
-    const adminAuth = getAdminAuth(adminApp);
+    // Remove: const adminAuth = getAdminAuth(adminApp); - not used in simplified handler
 
     // Handle events...
     console.log(`Webhook received: ${event.type}`);
