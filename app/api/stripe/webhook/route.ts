@@ -33,12 +33,13 @@ export async function POST(req: NextRequest) {
 
     const adminApp = getAdminApp();
     const adminFirestore = getAdminFirestore();
-    const adminAuth = getAdminAuth(adminApp);
 
-    if (!adminApp || !adminFirestore || !adminAuth) {
+    if (!adminApp || !adminFirestore) {
       console.error("Webhook: Firebase Admin SDK not fully initialized");
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
+
+    const adminAuth = getAdminAuth(adminApp);
 
     switch (event.type) {
       case 'checkout.session.completed': {
