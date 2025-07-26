@@ -1,7 +1,7 @@
 // app/checkout/page.tsx
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
@@ -11,10 +11,6 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const priceId = searchParams.get('priceId');
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-
-  // Remove the entire handleCheckout function - PaymentButton handles this internally
-  // Remove the error state - PaymentButton handles errors internally
 
   if (!priceId) {
     return (
@@ -43,10 +39,7 @@ function CheckoutContent() {
         )}
 
         <div className="space-y-4">
-          <PaymentButton
-            priceId={priceId}
-            loading={loading}
-          />
+          <PaymentButton priceId={priceId} />
           
           <Link 
             href="/pricing" 
