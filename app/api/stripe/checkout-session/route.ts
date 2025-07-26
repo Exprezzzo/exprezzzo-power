@@ -1,7 +1,17 @@
 // app/api/stripe/checkout-session/route.ts
+// Implements Phoenix v3.4 Fixes:
+// - Removes unused client-side Firestore imports
+// - Explicitly sets Node.js runtime and maxDuration
+// - Adds environment variable debug logging
+
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin';
+// Removed: import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'; // These are client-side imports and are not used here
+import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin'; // Import getAdminApp AND getAdminFirestore
+
+// Phoenix v3.4: Explicitly set runtime and maxDuration for Node.js environment
+export const runtime = 'nodejs';
+export const maxDuration = 30; // Max duration for Vercel functions (in seconds)
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -9,10 +19,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(req: NextRequest) {
+  // Phoenix v3.4: Add environment variable debug logging
+  console.log('--- Checkout Session ENV Check ---');
+  console.log('STRIPE_SECRET_KEY LOADED:', !!process.env.STRIPE_SECRET_KEY);
+  console.log('FIREBASE_PRIVATE_KEY LOADED:', !!process.env.FIREBASE_PRIVATE_KEY);
+  console.log('VERCEL_ENV:', process.env.VERCEL_ENV);
+  console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
+  console.log('--- End ENV Check ---');
+
   try {
     const { priceId, userId, userEmail } = await req.json();
 
     if (!priceId) {
+      console.error('Checkout session: Price ID is missing.');
       return NextResponse.json({ error: 'Price ID is required.' }, { status: 400 });
     }
 
@@ -28,21 +47,19 @@ export async function POST(req: NextRequest) {
 
     // If a userId is passed from an authenticated user, try to find/create their Stripe customer
     if (userId) {
-      const userRef = adminFirestore.collection('users').doc(userId); // Use adminFirestore here
+      const userRef = adminFirestore.collection('users').doc(userId);
       const userDoc = await userRef.get();
-      const userData = userDoc.data(); // Store the data once
 
-      if (userDoc.exists && userData?.stripeCustomerId) {
-        customerId = userData.stripeCustomerId; // Now we can safely access it
+      if (userDoc.exists && userDoc.data()?.stripeCustomerId) {
+        customerId = userDoc.data().stripeCustomerId;
         console.log(`Using existing Stripe customer for user ${userId}: ${customerId}`);
       } else {
-        // Create a new Stripe customer
         const customer = await stripe.customers.create({
           email: userEmail || undefined,
           metadata: { firebaseUid: userId },
         });
         customerId = customer.id;
-        await userRef.set({ stripeCustomerId: customer.id }, { merge: true }); // Use userRef.set directly from adminFirestore
+        await userRef.set({ stripeCustomerId: customer.id }, { merge: true });
         console.log(`Created new Stripe customer for user ${userId}: ${customerId}`);
       }
     } else if (userEmail) {
@@ -64,7 +81,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'User information missing for checkout.' }, { status: 400 });
     }
 
-
     // Construct dynamic success and cancel URLs
     const host = req.headers.get('host');
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
@@ -72,7 +88,7 @@ export async function POST(req: NextRequest) {
     const successUrl = `${protocol}://${host}/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${protocol}://${host}/pricing`;
 
-    // Create the Stripe Checkout Session
+    // Pass planType in metadata for webhook
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -80,7 +96,7 @@ export async function POST(req: NextRequest) {
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      metadata: { firebaseUid: userId || 'guest' },
+      metadata: { firebaseUid: userId || 'guest', planType: plan }, // Ensure planType is passed
       customer_email: userEmail || undefined,
     });
 
