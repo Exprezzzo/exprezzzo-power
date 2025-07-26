@@ -3,40 +3,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin';
 
-// Initialize Stripe with your secret key
+// CRITICAL: Force Node.js runtime for Firebase Admin SDK
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// Initialize Stripe with explicit configuration
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20', // Use a stable API version
+  apiVersion: '2024-11-20.acacia' as Stripe.LatestApiVersion,
+  typescript: true,
+  maxNetworkRetries: 2,
+  timeout: 20000, // 20 seconds
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const { priceId, userId, userEmail } = await req.json();
+    // Environment validation
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY not found in environment');
+      return NextResponse.json(
+        { error: 'Payment system not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    // Parse request body
+    const body = await req.json();
+    const { priceId, userId, userEmail } = body;
 
     if (!priceId) {
       return NextResponse.json({ error: 'Price ID is required.' }, { status: 400 });
     }
 
-    const adminApp = getAdminApp(); // Get the Firebase Admin app instance
-    const adminFirestore = getAdminFirestore(); // Use the safe getter for Firestore
+    // Initialize Firebase Admin
+    const adminApp = getAdminApp();
+    const adminFirestore = getAdminFirestore();
 
-    if (!adminApp || !adminFirestore) { // Check both app and firestore are valid
-      console.error("Checkout-session API: Firebase Admin SDK not fully initialized. Cannot process.");
-      return NextResponse.json({ error: "Server configuration error. Please try again later." }, { status: 500 });
+    if (!adminApp || !adminFirestore) {
+      console.error("Firebase Admin SDK not initialized");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
 
     let customerId: string | undefined;
 
-    // If a userId is passed from an authenticated user, try to find/create their Stripe customer
+    // Handle customer creation/retrieval
     if (userId) {
       const userRef = adminFirestore.collection('users').doc(userId);
       const userDoc = await userRef.get();
-      const userData = userDoc.data(); // Store data once to avoid multiple calls
+      const userData = userDoc.data();
 
       if (userDoc.exists && userData?.stripeCustomerId) {
-        customerId = userData.stripeCustomerId as string; // We know it exists from the check
+        customerId = userData.stripeCustomerId as string;
         console.log(`Using existing Stripe customer for user ${userId}: ${customerId}`);
       } else {
-        // Create a new Stripe customer
         const customer = await stripe.customers.create({
           email: userEmail || undefined,
           metadata: { firebaseUid: userId },
@@ -46,55 +64,88 @@ export async function POST(req: NextRequest) {
         console.log(`Created new Stripe customer for user ${userId}: ${customerId}`);
       }
     } else if (userEmail) {
-      // If no userId but email is provided (guest checkout), try to find existing customer by email
       const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
       if (customers.data.length > 0) {
         customerId = customers.data[0].id;
-        console.log(`Using existing Stripe customer found by email for guest: ${customerId}`);
+        console.log(`Using existing Stripe customer for guest: ${customerId}`);
       } else {
         const customer = await stripe.customers.create({
           email: userEmail,
           metadata: { guestEmail: userEmail }
         });
         customerId = customer.id;
-        console.log(`Created new Stripe customer for guest email: ${customerId}`);
+        console.log(`Created new Stripe customer for guest: ${customerId}`);
       }
-    } else {
-      console.error('Checkout session creation failed: no userId or userEmail provided.');
-      return NextResponse.json({ error: 'User information missing for checkout.' }, { status: 400 });
     }
 
-    // Construct dynamic success and cancel URLs
-    const host = req.headers.get('host');
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    // Get dynamic URLs
+    const origin = req.headers.get('origin') || 
+                   req.headers.get('x-forwarded-host') ? `https://${req.headers.get('x-forwarded-host')}` : 
+                   process.env.NEXT_PUBLIC_APP_URL || 
+                   'https://exprezzzo-power.vercel.app';
 
-    const successUrl = `${protocol}://${host}/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${protocol}://${host}/pricing`;
+    const successUrl = `${origin}/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${origin}/pricing`;
 
-    // Create the Stripe Checkout Session
+    console.log('Creating checkout session with URLs:', { successUrl, cancelUrl });
+
+    // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
-      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{
+        price: priceId,
+        quantity: 1,
+      }],
       mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
+      customer: customerId,
+      customer_email: !customerId ? userEmail || undefined : undefined,
+      client_reference_id: userId || undefined,
+      metadata: {
+        firebaseUid: userId || 'guest',
+        timestamp: new Date().toISOString(),
+      },
       allow_promotion_codes: true,
-      metadata: { firebaseUid: userId || 'guest' },
-      customer_email: !customerId ? userEmail || undefined : undefined, // Only set email if no customer
     });
 
     if (!session.url) {
-      throw new Error('Stripe session URL not created.');
+      throw new Error('Stripe session URL not created');
     }
 
-    console.log(`Stripe Checkout Session created for user ${userId || 'guest'}: ${session.url}`);
-    return NextResponse.json({ url: session.url }, { status: 200 });
+    console.log(`Checkout session created: ${session.id}`);
+    return NextResponse.json({ 
+      url: session.url,
+      sessionId: session.id,
+    });
 
   } catch (error: any) {
-    console.error('Error in Stripe checkout-session API:', error);
+    console.error('Stripe checkout error:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
+
     return NextResponse.json(
-      { error: 'Payment system temporarily unavailable. Please verify your Stripe API keys and Price IDs, and ensure you are logged in.' },
-      { status: 500 }
+      { 
+        error: error.message || 'Payment system temporarily unavailable',
+        code: error.code,
+        type: error.type,
+      },
+      { status: error.statusCode || 500 }
     );
   }
+}
+
+// Handle CORS preflight
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }
