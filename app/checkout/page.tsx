@@ -2,15 +2,15 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation'; // Removed useRouter
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import { PaymentButton } from '@/components/PaymentButton'; // Changed to named import
+import { PaymentButton } from '@/components/PaymentButton';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const priceId = searchParams.get('priceId');
-  const router = useRouter();
+  // Removed: const router = useRouter(); - it was unused
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
