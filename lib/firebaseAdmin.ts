@@ -1,4 +1,8 @@
 // lib/firebaseAdmin.ts - Enhanced server-side Firebase Admin
+// Implements Phoenix v3.4 Fixes:
+// - Production-Ready Admin SDK Initialization
+// - Mock mode for development/missing credentials
+
 import * as admin from 'firebase-admin';
 import { getApps, getApp, cert, initializeApp, ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -15,7 +19,7 @@ let adminDb: Firestore | null = null;
 const initializeAdmin = (): boolean => {
   // Skip if already initialized
   if (getApps().length > 0) {
-    adminApp = getApp();
+    adminApp = getApp(); // Get existing app
     adminAuth = getAuth(adminApp);
     adminDb = getFirestore(adminApp);
     return true;
@@ -30,7 +34,7 @@ const initializeAdmin = (): boolean => {
     if (!projectId || !clientEmail || !privateKey) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('Firebase Admin: Missing credentials for development, running in mock mode. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.');
-        return false;
+        return false; // Indicate Firebase is NOT fully available for real operations
       }
       throw new Error('Missing Firebase Admin credentials in production. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY.');
     }
@@ -71,21 +75,21 @@ const initializeAdmin = (): boolean => {
 
 // Lazy initialization wrapper
 const ensureInitialized = () => {
-  if (!adminApp && !getApps().length) { // Only attempt to initialize if not already initialized
+  if (!adminApp && getApps().length === 0) { // Only attempt to initialize if no app exists globally
     const success = initializeAdmin();
     if (!success && process.env.NODE_ENV === 'production') {
-      // If initializeAdmin returns false in production, it means it failed fatally
       throw new Error('Firebase Admin SDK initialization failed in production and could not recover.');
     }
   } else if (getApps().length > 0 && !adminApp) {
-    // This case means app was initialized elsewhere, but our local `adminApp` ref isn't set
+    // This case means an app was initialized elsewhere (e.g., in a different part of backend),
+    // but our local `adminApp` ref isn't set. Get the existing app.
     adminApp = getApp();
     adminAuth = getAuth(adminApp);
     adminDb = getFirestore(adminApp);
   }
 };
 
-// Export getters that ensure initialization
+// Export getters that ensure initialization before returning the service instance
 export const getAdminApp = (): AdminApp => {
   ensureInitialized();
   return adminApp;
@@ -94,7 +98,7 @@ export const getAdminApp = (): AdminApp => {
 export const getAdminAuth = (): admin.auth.Auth => {
   ensureInitialized();
   if (!adminAuth) {
-    throw new Error('Firebase Admin Auth not initialized (likely due to missing credentials).');
+    throw new Error('Firebase Admin Auth not initialized (likely due to missing credentials or init failure).');
   }
   return adminAuth;
 };
@@ -102,10 +106,11 @@ export const getAdminAuth = (): admin.auth.Auth => {
 export const getAdminFirestore = (): Firestore => {
   ensureInitialized();
   if (!adminDb) {
-    throw new Error('Firebase Admin Firestore not initialized (likely due to missing credentials).');
+    throw new Error('Firebase Admin Firestore not initialized (likely due to missing credentials or init failure).');
   }
   return adminDb;
 };
 
 // Export for backwards compatibility (if needed by older code)
+// Be cautious: direct access to these might bypass the ensureInitialized() check in some contexts.
 export { adminApp, adminAuth, adminDb };
