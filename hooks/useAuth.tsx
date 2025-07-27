@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { 
+import {
   User,
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -20,7 +20,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  
+
   // Auth methods - matching what your components expect
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       const provider = new GoogleAuthProvider();
-      
+
       // Try popup first, fallback to redirect if blocked
       try {
         await signInWithPopup(auth, provider);
