@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter } from 'next/navigation'; // <<< CRITICAL FIX: 'useSearchParams' REMOVED from this line
+import { useRouter } from 'next/navigation'; // <<< CRITICAL FIX: This line MUST match, with useSearchParams REMOVED
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
 // Use a client component wrapper for useSearchParams
 function CheckoutContent() {
   const router = useRouter();
-  // Ensure THIS LINE is ABSENT, if it was manually added back or uncommented:
-  // const searchParams = useSearchParams();
+  // Ensure THIS LINE is ABSENT: const searchParams = useSearchParams();
   const { user, loading } = useAuth(); // Assuming useAuth provides user and loading
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
