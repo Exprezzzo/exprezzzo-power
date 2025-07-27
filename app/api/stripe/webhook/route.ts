@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getAdminApp, getAdminFirestore } from '@/lib/firebaseAdmin';
-// Remove the unused import: import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 
 // Force Node.js runtime
 export const runtime = 'nodejs';
@@ -40,8 +39,6 @@ export async function POST(req: NextRequest) {
       console.error("Firebase Admin SDK not initialized");
       return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
     }
-
-    // Remove: const adminAuth = getAdminAuth(adminApp); - not used in simplified handler
 
     // Handle events...
     console.log(`Webhook received: ${event.type}`);
