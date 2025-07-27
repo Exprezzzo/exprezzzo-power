@@ -1,78 +1,41 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  User, 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function DashboardPage() {
+  const { user, loading, logOut } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    if (!loading && !user) {
+      router.push('/login'); // Redirect to login if not authenticated
+    }
+  }, [user, loading, router]);
 
-    return unsubscribe;
-  }, []);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+        Loading dashboard...
+      </div>
+    );
+  }
 
-  const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const signUp = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  const signOut = async () => {
-    await firebaseSignOut(auth);
-  };
-
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
-
-  const value = {
-    user,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    signInWithGoogle
-  };
+  if (!user) {
+    return null; // Or a message indicating redirection
+  }
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
+      <h1 className="text-4xl font-bold mb-6">Welcome to your Dashboard, {user.email}!</h1>
+      <p className="text-lg mb-8">This is where your AI power and features will live.</p>
+      <button
+        onClick={logOut}
+        className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-300"
+      >
+        Log Out
+      </button>
+    </div>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 }
