@@ -14,6 +14,7 @@ function CheckoutContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // USE searchParams HERE
   const priceId = searchParams.get('priceId');
   const plan = searchParams.get('plan') || 'monthly';
 
