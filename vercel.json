@@ -2,18 +2,23 @@
   "functions": {
     "app/api/stripe/checkout-session/route.ts": {
       "maxDuration": 30,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
+      "memory": 1024
     },
     "app/api/stripe/webhook/route.ts": {
       "maxDuration": 30,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
+      "memory": 1024
     },
     "app/api/chat/route.ts": {
       "maxDuration": 30,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
+      "memory": 1024
+    },
+    "app/api/power/route.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "app/api/signup/route.ts": {
+      "maxDuration": 30,
+      "memory": 1024
     }
   }
 }
