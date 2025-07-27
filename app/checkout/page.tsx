@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter } from 'next/navigation'; // <<< CRITICAL FIX: This line MUST match, with useSearchParams REMOVED
+import { useRouter } from 'next/navigation'; // CRITICAL FIX: 'useSearchParams' REMOVED from this line
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
