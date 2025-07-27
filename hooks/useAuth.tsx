@@ -1,98 +1,151 @@
-// hooks/useAuth.tsx
 'use client';
 
-import { useState, useEffect, useContext, createContext } from 'react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { getApps, getApp, initializeApp } from 'firebase/app'; // Correct import for getApps and getApp
-import { doc, onSnapshot, getFirestore } from 'firebase/firestore'; // Correct import for getFirestore
-import { auth, firebaseConfig } from '@/lib/firebase'; // Assuming firebaseConfig is exported, or modify as needed
-
-interface UserProfile {
-  uid: string;
-  email: string | null;
-  isPro: boolean; // This is the crucial field
-  // Add other user profile fields as needed
-}
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { 
+  User,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult
+} from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
-  user: UserProfile | null;
+  // State
+  user: User | null;
   loading: boolean;
-  firebaseUser: FirebaseUser | null; // Keep original FirebaseUser object
+  error: string | null;
+  
+  // Auth methods - matching what your components expect
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  logOut: () => Promise<void>; // Your dashboard expects this
+  resetPassword: (email: string) => Promise<void>; // Your login expects this
+  signInWithGoogle: () => Promise<void>;
+  clearError: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, firebaseUser: null });
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (authenticatedUser) => {
-      setFirebaseUser(authenticatedUser);
-      if (authenticatedUser) {
-        let appInstance;
-        // Ensure the Firebase app is initialized, if not already.
-        // This relies on `auth` being initialized which should also initialize the app.
-        if (!getApps().length) {
-          // Fallback if app is somehow not initialized, but typically auth import initializes it.
-          // You might need to import `initializeApp` from 'firebase/app' and call it here.
-          // For now, assume it's initialized by '@/lib/firebase'.
-          console.error("Firebase app not initialized when useAuth started. This is unexpected.");
-          setLoading(false);
-          setUser(null);
-          return;
-        }
-        appInstance = getApp(); // Get the default initialized app
-
-        const db = getFirestore(appInstance); // Use the retrieved app instance
-        const userDocRef = doc(db, 'users', authenticatedUser.uid);
-
-        const unsubscribeFirestore = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const userData = docSnap.data();
-            setUser({
-              uid: authenticatedUser.uid,
-              email: authenticatedUser.email,
-              isPro: userData.isPro || false, // Default to false if not set
-              ...userData // Merge all other user data
-            });
-          } else {
-            // User document doesn't exist yet, create a basic one
-            setUser({
-              uid: authenticatedUser.uid,
-              email: authenticatedUser.email,
-              isPro: false,
-            });
-            // Optionally, create the user document in Firestore if it doesn't exist
-            // import { setDoc } from 'firebase/firestore';
-            // setDoc(userDocRef, { email: authenticatedUser.email, isPro: false }, { merge: true });
-          }
-          setLoading(false);
-        }, (error) => {
-          console.error("Error listening to user document:", error);
-          setLoading(false);
-          setUser(null); // Treat as no user if there's a firestore error
-        });
-
-        // Clean up Firestore listener on unmount or user change
-        return () => unsubscribeFirestore();
-      } else {
-        // No authenticated user
-        setUser(null);
-        setLoading(false);
-      }
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
     });
 
-    // Clean up Auth state listener on unmount
-    return () => unsubscribeAuth();
-  }, []); // Empty dependency array means this effect runs once on mount
+    // Check for redirect result (for social logins)
+    getRedirectResult(auth).catch((error) => {
+      console.error('Redirect result error:', error);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Sign in with email and password
+  const signIn = async (email: string, password: string) => {
+    try {
+      setError(null);
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Sign up with email and password
+  const signUp = async (email: string, password: string) => {
+    try {
+      setError(null);
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Log out (matching your dashboard's expectation)
+  const logOut = async () => {
+    try {
+      setError(null);
+      await signOut(auth);
+    } catch (error: any) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (email: string) => {
+    try {
+      setError(null);
+      await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Sign in with Google
+  const signInWithGoogle = async () => {
+    try {
+      setError(null);
+      const provider = new GoogleAuthProvider();
+      
+      // Try popup first, fallback to redirect if blocked
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (popupError: any) {
+        if (popupError.code === 'auth/popup-blocked') {
+          await signInWithRedirect(auth, provider);
+        } else {
+          throw popupError;
+        }
+      }
+    } catch (error: any) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  // Clear error state
+  const clearError = () => {
+    setError(null);
+  };
+
+  const value: AuthContextType = {
+    user,
+    loading,
+    error,
+    signIn,
+    signUp,
+    logOut, // Named to match your dashboard
+    resetPassword,
+    signInWithGoogle,
+    clearError
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, firebaseUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
