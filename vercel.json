@@ -1,4 +1,4 @@
-json
+```json
 {
   "functions": {
     "app/api/stripe/checkout-session/route.ts": {
@@ -19,3 +19,4 @@ json
     }
   }
 }
+```
