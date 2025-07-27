@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles, Mail, Lock } from 'lucide-react'; // Ensure all icons are imported
+import { ArrowRight, Zap, Brain, Shield, Globe, Code, Users, CheckCircle, Sparkles, Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { APP_NAME, PRICING } from '@/lib/constants'; // Import constants
@@ -13,13 +13,13 @@ import { APP_NAME, PRICING } from '@/lib/constants'; // Import constants
 // It's a named export, so .then(mod => mod.PaymentButton) is correct.
 const PaymentButton = dynamic(
   () => import('@/components/PaymentButton').then(mod => mod.PaymentButton),
-  { ssr: false } // Crucial: This ensures the component is only rendered on the client
+  { ssr: false }
 );
 
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly'); // Added for pricing section on landing
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   // Use price IDs from constants
   const FOUNDING_PRICE_ID = PRICING.monthly.priceId;
