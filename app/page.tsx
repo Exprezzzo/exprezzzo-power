@@ -6,14 +6,11 @@ import { Brain, Zap, Gem, Rocket } from 'lucide-react'; // Example icons
 import { PaymentButton } from '@/components/PaymentButton'; // Changed from default to named import
 
 export default function HomePage() {
-  // Example usage for an authenticated user (Clerk)
   const isAuthenticated = true; // Replace with actual auth check if not using Clerk
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
       <header className="absolute top-4 right-4 z-10">
-        {/* If using Clerk, you would typically render: <UserButton afterSignOutUrl="/" /> */}
-        {/* For now, a placeholder or direct link */}
         {isAuthenticated ? (
           <div className="flex items-center space-x-4">
             <UserButton afterSignOutUrl="/" /> {/* Example for Clerk */}
@@ -67,11 +64,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Example of where PaymentButton might be used, if applicable to the homepage */}
       <div className="mt-12 text-center">
         <h2 className="text-3xl font-bold mb-4">Ready to unlock full power?</h2>
         <p className="text-lg text-gray-300 mb-6">Upgrade your account for unlimited access and advanced features.</p>
-        <PaymentButton productName="Power Plan" priceId="price_12345" /> {/* Example usage */}
+        <PaymentButton productName="Power Plan" priceId="price_12345" />
       </div>
 
       <footer className="mt-16 text-gray-500 text-sm">
