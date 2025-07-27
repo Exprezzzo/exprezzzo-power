@@ -2,7 +2,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 export interface PaymentButtonProps {
@@ -23,12 +22,10 @@ export function PaymentButton({
   userEmail
 }: PaymentButtonProps) {
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handlePayment = async () => {
     try {
       setLoading(true);
-
       const response = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,18 +37,15 @@ export function PaymentButton({
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session');
       }
 
       if (data.url) {
-        // Redirect to Stripe Checkout
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
       }
-
     } catch (error: any) {
       console.error('Payment error:', error);
       alert(error.message || 'Something went wrong. Please try again.');
@@ -88,3 +82,5 @@ export function PaymentButton({
     </button>
   );
 }
+
+export default PaymentButton;
