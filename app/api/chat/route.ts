@@ -1,11 +1,15 @@
 // app/api/chat/route.ts
+// Implements Phoenix v3.4 Fixes:
+// - Corrects Firestore FieldValue usage
+// - Removes unused 'APP_NAME' import
+// - Explicitly sets Node.js runtime
+
 import { NextRequest, NextResponse } from 'next/server';
-import { allAIProviders } from '@/lib/ai-providers';
+import { allAIProviders } from '@/lib/ai-providers'; // Correctly import allAIProviders
 import { getFirestore, FieldValue } from 'firebase-admin/firestore'; // Import getFirestore AND FieldValue
 import { getAdminApp } from '@/lib/firebaseAdmin'; // For server-side Firebase Admin SDK
-// APP_NAME import removed as it was unused in this file
 
-export const runtime = 'nodejs'; // Explicitly set to Node.js for AI SDKs
+export const runtime = 'nodejs'; // Phoenix v3.4: Explicitly set to Node.js for AI SDKs
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,7 +43,6 @@ export async function POST(req: NextRequest) {
         try {
           for await (const chunk of selectedAIProvider.streamChatCompletion(messages)) {
             if (firstChunk) {
-              // Send initial metadata if needed (e.g., model name)
               controller.enqueue(encoder.encode(JSON.stringify({ type: 'metadata', model: selectedAIProvider.name }) + '\n'));
               firstChunk = false;
             }
@@ -50,16 +53,13 @@ export async function POST(req: NextRequest) {
           console.error(`Streaming error from AI provider (${selectedAIProvider.id}):`, error);
           controller.enqueue(encoder.encode(`ERROR: ${error.message || 'An unexpected error occurred during streaming.'}`));
         } finally {
-          // Log usage after streaming completes
           if (adminFirestore && fullResponseContent) { // Ensure adminFirestore is not null before using it
             try {
               const userUsageRef = adminFirestore.collection('users').doc(userId);
-              // Use FieldValue directly from firebase-admin/firestore AFTER checking adminFirestore
               await userUsageRef.set({
                 lastActivity: new Date().toISOString(),
                 chatCount: FieldValue.increment(1), // Correct usage for admin firestore FieldValue
                 [`modelUsage.${selectedAIProvider.id}.count`]: FieldValue.increment(1),
-                // TODO: Implement token and cost estimation for more granular logging
               }, { merge: true });
               console.log(`Usage logged for user ${userId} with model ${selectedAIProvider.id}`);
             } catch (logError) {
