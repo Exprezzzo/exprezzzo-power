@@ -1,65 +1,90 @@
-// app/checkout/page.tsx
 'use client';
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import { PaymentButton } from '@/components/PaymentButton';
 
+// Use a client component wrapper for useSearchParams
 function CheckoutContent() {
-  const searchParams = useSearchParams();
-  const priceId = searchParams.get('priceId');
-  const { user } = useAuth();
+  const router = useRouter();
+  // REMOVED: const searchParams = useSearchParams();
+  // If you later need to use searchParams (e.g., for session_id), you can re-add it
+  // and ensure it's utilized in the component.
+  const { user, loading } = useAuth(); // Assuming useAuth provides user and loading
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  if (!priceId) {
+  // In a real application, you'd fetch checkout session details
+  // based on searchParams.get('session_id') or similar,
+  // and handle success/cancel logic here.
+  // For now, we'll simulate a simple page.
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">No plan selected</h1>
-          <Link href="/pricing" className="text-blue-400 hover:underline">
-            Return to pricing
-          </Link>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+        Loading...
       </div>
     );
   }
 
+  if (!user) {
+    router.push('/login'); // Redirect to login if not authenticated
+    return null;
+  }
+
+  const handleCheckout = async () => {
+    setErrorMessage(null);
+    try {
+      // In a real app, this would trigger your Stripe checkout session API route
+      // For demonstration:
+      console.log('Initiating checkout for user:', user.email);
+      router.push('/success'); // Simulate success
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      setErrorMessage(error.message || 'An unknown error occurred during checkout.');
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-xl p-8">
-        <h1 className="text-2xl font-bold text-white mb-6">Complete Your Purchase</h1>
-        
-        {!user && (
-          <div className="mb-6 p-4 bg-blue-900/50 rounded-lg">
-            <p className="text-blue-300 text-sm">
-              You're checking out as a guest. You'll create an account after payment.
-            </p>
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
+      <h1 className="text-4xl font-bold mb-6">Secure Checkout</h1>
+      {user && <p className="text-lg mb-4">You are logged in as: {user.email}</p>}
+
+      <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">
+        <h2 className="text-2xl font-semibold mb-6 text-center">Subscription Plan</h2>
+        <div className="mb-4">
+          <p className="text-gray-300">Plan: **Power ($97/month)**</p>
+          <p className="text-gray-300">Description: Unlimited chats, advanced models, API access.</p>
+        </div>
+
+        {errorMessage && (
+          <div className="bg-red-900 text-white p-3 rounded mb-4 text-center">
+            Error: {errorMessage}
           </div>
         )}
 
-        <div className="space-y-4">
-          <PaymentButton priceId={priceId} />
-          
-          <Link 
-            href="/pricing" 
-            className="block text-center text-gray-400 hover:text-white transition-colors"
-          >
-            Cancel
-          </Link>
-        </div>
+        <button
+          onClick={handleCheckout}
+          className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
+        >
+          Proceed to Payment
+        </button>
+        <p className="text-center text-gray-400 text-sm mt-4">
+          Powered by Stripe. Your payment information is secure.
+        </p>
       </div>
+
+      <Link href="/pricing" className="mt-8 text-blue-400 hover:underline">
+        Choose a different plan
+      </Link>
     </div>
   );
 }
 
+// Wrap the CheckoutContent with Suspense for useSearchParams
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-white">Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<div>Loading checkout page...</div>}>
       <CheckoutContent />
     </Suspense>
   );
