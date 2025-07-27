@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter } from 'next/navigation'; // CORRECTED: Removed useSearchParams from import
+import { useRouter } from 'next/navigation'; // <<< CRITICAL FIX: 'useSearchParams' REMOVED from this line
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
 // Use a client component wrapper for useSearchParams
 function CheckoutContent() {
   const router = useRouter();
-  // Ensure this line is ABSENT: const searchParams = useSearchParams();
+  // Ensure THIS LINE is ABSENT, if it was manually added back or uncommented:
+  // const searchParams = useSearchParams();
   const { user, loading } = useAuth(); // Assuming useAuth provides user and loading
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -79,9 +80,9 @@ function CheckoutContent() {
   );
 }
 
-// Wrap the CheckoutContent with Suspense for useSearchParams (still needed here for the hook itself)
-// This Suspense boundary is needed because useSearchParams is used in some Next.js environments,
-// even if you're not directly declaring the variable in CheckoutContent.
+// Wrap the CheckoutContent with Suspense for useSearchParams.
+// This Suspense boundary is still correct and needed here for Next.js routing,
+// even if useSearchParams is not directly destructured inside CheckoutContent.
 export default function CheckoutPage() {
   return (
     <Suspense fallback={<div>Loading checkout page...</div>}>
