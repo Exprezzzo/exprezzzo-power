@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { allAIProviders } from '@/lib/ai-providers'; // Make sure you already have provider definitions
+import { allAIProviders } from '@/lib/ai-providers'; // Make sure this file exists and lists your providers
 
 // Valid API keys
 const VALID_API_KEYS = new Set([
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { 
       prompt,
-      providers = ['groq'],
+      providers = ['groq'], // Default to cheapest
       mode = 'first-success',
       maxTokens = 500,
       temperature = 0.7
@@ -115,6 +115,12 @@ async function executeParallel(prompt: string, providers: string[]) {
     tokens: 0,
     cost: 0
   };
+}
+
+// New function Claude mentioned
+async function executeConsensus(prompt: string, providers: string[]) {
+  // For now, just reuse parallel logic
+  return executeParallel(prompt, providers);
 }
 
 function calculateCost(provider: string, content: string): number {
