@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { allAIProviders } from '@/lib/ai-providers'; // Make sure this file exists and lists your providers
+import { allAIProviders } from '@/lib/ai-providers'; // Make sure this file exists
 
 // Valid API keys
 const VALID_API_KEYS = new Set([
@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
       prompt,
       providers = ['groq'], // Default to cheapest
       mode = 'first-success',
-      maxTokens = 500,
-      temperature = 0.7
+      _maxTokens = 500,   // Prefixed to avoid TypeScript unused var error
+      _temperature = 0.7  // Prefixed to avoid TypeScript unused var error
     } = body;
 
     let response;
@@ -117,7 +117,7 @@ async function executeParallel(prompt: string, providers: string[]) {
   };
 }
 
-// New function Claude mentioned
+// Claude’s missing function fix
 async function executeConsensus(prompt: string, providers: string[]) {
   // For now, just reuse parallel logic
   return executeParallel(prompt, providers);

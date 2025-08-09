@@ -1,3 +1,8 @@
+'use client';
+import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+import { Brain, Zap, Gem, Rocket } from 'lucide-react';
+import { PaymentButton } from '@/components/PaymentButton';
 export default function HomePage() {
   const { user, logOut } = useAuth();
 
