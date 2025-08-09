@@ -1,13 +1,14 @@
-// app/api/orchestrate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { allAIProviders } from '@/lib/ai-providers';
+import { allAIProviders } from '@/lib/ai-providers'; // Ensure your provider definitions exist
 
+// Valid API keys
 const VALID_API_KEYS = new Set([
   process.env.EXPREZZZO_API_KEY,
   process.env.OPENAI_CUSTOM_GPT_KEY
 ]);
 
 export async function POST(req: NextRequest) {
+  // Authenticate
   const apiKey = req.headers.get('x-api-key');
   if (!apiKey || !VALID_API_KEYS.has(apiKey)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
