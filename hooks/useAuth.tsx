@@ -1,151 +1,73 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useState, useEffect, useContext, createContext } from 'react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
-interface AuthContextType {
-  // State
-  user: User | null;
-  loading: boolean;
-  error: string | null;
-
-  // Auth methods - matching what your components expect
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  logOut: () => Promise<void>; // Your dashboard expects this
-  resetPassword: (email: string) => Promise<void>; // Your login expects this
-  signInWithGoogle: () => Promise<void>;
-  clearError: () => void;
+// Extend Firebase's User type to include custom fields
+export interface ExtendedUser extends FirebaseUser {
+  isPro?: boolean;
+  plan?: string;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextValue {
+  user: ExtendedUser | null;
+  loading: boolean;
+  logOut: () => Promise<void>;
+}
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  loading: true,
+  logOut: async () => {}
+});
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<ExtendedUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Listen to Firestore for extra fields
+        const unsubscribeDoc = onSnapshot(
+          doc(db, 'users', firebaseUser.uid),
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              setUser({
+                ...firebaseUser,
+                isPro: data.isPro || false,
+                plan: data.plan || 'free'
+              });
+            } else {
+              setUser(firebaseUser as ExtendedUser);
+            }
+            setLoading(false);
+          }
+        );
+        return () => unsubscribeDoc();
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
     });
 
-    // Check for redirect result (for social logins)
-    getRedirectResult(auth).catch((error) => {
-      console.error('Redirect result error:', error);
-    });
-
-    return unsubscribe;
+    return () => unsubscribeAuth();
   }, []);
 
-  // Sign in with email and password
-  const signIn = async (email: string, password: string) => {
-    try {
-      setError(null);
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      setError(error.message);
-      throw error;
-    }
-  };
-
-  // Sign up with email and password
-  const signUp = async (email: string, password: string) => {
-    try {
-      setError(null);
-      await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      setError(error.message);
-      throw error;
-    }
-  };
-
-  // Log out (matching your dashboard's expectation)
-  const logOut = async () => {
-    try {
-      setError(null);
-      await signOut(auth);
-    } catch (error: any) {
-      setError(error.message);
-      throw error;
-    }
-  };
-
-  // Reset password
-  const resetPassword = async (email: string) => {
-    try {
-      setError(null);
-      await sendPasswordResetEmail(auth, email);
-    } catch (error: any) {
-      setError(error.message);
-      throw error;
-    }
-  };
-
-  // Sign in with Google
-  const signInWithGoogle = async () => {
-    try {
-      setError(null);
-      const provider = new GoogleAuthProvider();
-
-      // Try popup first, fallback to redirect if blocked
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (popupError: any) {
-        if (popupError.code === 'auth/popup-blocked') {
-          await signInWithRedirect(auth, provider);
-        } else {
-          throw popupError;
-        }
-      }
-    } catch (error: any) {
-      setError(error.message);
-      throw error;
-    }
-  };
-
-  // Clear error state
-  const clearError = () => {
-    setError(null);
-  };
-
-  const value: AuthContextType = {
-    user,
-    loading,
-    error,
-    signIn,
-    signUp,
-    logOut, // Named to match your dashboard
-    resetPassword,
-    signInWithGoogle,
-    clearError
-  };
+  async function logOut() {
+    await auth.signOut();
+  }
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, logOut }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return useContext(AuthContext);
 }
