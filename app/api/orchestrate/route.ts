@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { allAIProviders } from '@/lib/ai-providers';
 
-// Set valid API keys
+// Valid API keys
 const VALID_API_KEYS = new Set([
   process.env.EXPREZZZO_API_KEY,
   process.env.OPENAI_CUSTOM_GPT_KEY
 ]);
 
 export async function POST(req: NextRequest) {
+  // Authenticate
   const apiKey = req.headers.get('x-api-key');
   if (!apiKey || !VALID_API_KEYS.has(apiKey)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,22 +18,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { 
       prompt,
-      providers = ['groq'], // Default to cheapest provider
+      providers = ['groq'], // Default to cheapest
       mode = 'first-success',
       maxTokens = 500,
       temperature = 0.7
     } = body;
 
-    // Mark variables as used
-    console.log(`Request config: ${maxTokens} tokens, temperature ${temperature}`);
-
     let response;
-    switch (mode) {
+    switch(mode) {
       case 'parallel':
-        response = await executeParallel(prompt, providers);
+        response = await executeParallel(prompt, providers, maxTokens, temperature);
         break;
       case 'consensus':
-        response = await executeConsensus(prompt, providers);
+        response = await executeConsensus(prompt, providers, maxTokens, temperature);
         break;
       default:
         response = await executeWithFailover(prompt, providers, maxTokens, temperature);
@@ -61,24 +59,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function executeWithFailover(prompt: string, providers: string[], maxTokens: number, temperature: number) {
+async function executeWithFailover(
+  prompt: string, 
+  providers: string[], 
+  maxTokens: number, 
+  temperature: number
+) {
   for (const providerId of providers) {
     try {
       const provider = allAIProviders.find(p => p.id === providerId);
       if (!provider) continue;
-
+      
       const start = Date.now();
       let content = '';
-
-      // Example usage of maxTokens: stop early if we hit the limit
+      
+      // Pass options as second parameter
       for await (const chunk of provider.streamChatCompletion(
         [{ role: 'user', content: prompt }],
         { maxTokens, temperature }
       )) {
         content += chunk;
+        // Check token limit
         if (content.split(' ').length * 1.3 > maxTokens) break;
       }
-
+      
       return {
         content,
         providers: [providerId],
@@ -86,23 +90,30 @@ async function executeWithFailover(prompt: string, providers: string[], maxToken
         tokens: content.split(' ').length * 1.3,
         cost: calculateCost(providerId, content)
       };
-    } catch {
+    } catch (error) {
+      console.log(`Provider ${providerId} failed, trying next...`);
       continue;
     }
   }
   throw new Error('All providers failed');
 }
 
-async function executeParallel(prompt: string, providers: string[]) {
+async function executeParallel(
+  prompt: string, 
+  providers: string[],
+  maxTokens: number,
+  temperature: number
+) {
   const results = await Promise.all(providers.map(async (providerId) => {
     const provider = allAIProviders.find(p => p.id === providerId);
     if (!provider) return null;
 
     try {
       let content = '';
-      for await (const chunk of provider.streamChatCompletion([
-        { role: 'user', content: prompt }
-      ])) {
+      for await (const chunk of provider.streamChatCompletion(
+        [{ role: 'user', content: prompt }],
+        { maxTokens, temperature }
+      )) {
         content += chunk;
       }
       return { providerId, content };
@@ -112,7 +123,7 @@ async function executeParallel(prompt: string, providers: string[]) {
   }));
 
   const successful = results.filter(r => r !== null) as { providerId: string, content: string }[];
-
+  
   return {
     content: successful.map(r => ({ provider: r.providerId, response: r.content })),
     providers: successful.map(r => r.providerId),
@@ -122,9 +133,14 @@ async function executeParallel(prompt: string, providers: string[]) {
   };
 }
 
-async function executeConsensus(prompt: string, providers: string[]) {
-  // For now, just run parallel mode
-  return executeParallel(prompt, providers);
+async function executeConsensus(
+  prompt: string, 
+  providers: string[],
+  maxTokens: number,
+  temperature: number
+) {
+  // For now, just reuse parallel logic
+  return executeParallel(prompt, providers, maxTokens, temperature);
 }
 
 function calculateCost(provider: string, content: string): number {
