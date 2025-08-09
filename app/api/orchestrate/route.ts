@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { allAIProviders } from '@/lib/ai-providers'; // Ensure your provider definitions exist
+import { allAIProviders } from '@/lib/ai-providers'; // Make sure you already have provider definitions
 
 // Valid API keys
 const VALID_API_KEYS = new Set([
