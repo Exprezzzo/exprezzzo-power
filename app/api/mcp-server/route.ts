@@ -1,162 +1,103 @@
-import { NextRequest, NextResponse } from ‘next/server’;
+// app/api/mcp-server/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 
 const API_KEY = process.env.EXPREZZZO_API_KEY;
+const BASE_URL = process.env.EXPREZZZO_BASE_URL || 'https://exprezzzo-power.vercel.app';
 
-// MCP Server Implementation
-export async function POST(req: NextRequest) {
-try {
-const jsonRpcRequest = await req.json();
-
-```
-// Handle MCP initialization
-if (jsonRpcRequest.method === 'initialize') {
-  return NextResponse.json({
-    jsonrpc: '2.0',
-    id: jsonRpcRequest.id,
-    result: {
-      protocolVersion: '2024-11-05',
-      capabilities: {
-        tools: {}
+// MCP method handlers
+const handlers = {
+  orchestrate_ai: async (params: any) => {
+    const response = await fetch(`${BASE_URL}/api/orchestrate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY || ''
       },
-      serverInfo: {
-        name: 'EXPREZZZO Power',
-        version: '1.0.0'
-      }
-    }
-  });
-}
-
-// Handle tools list request
-if (jsonRpcRequest.method === 'tools/list') {
-  return NextResponse.json({
-    jsonrpc: '2.0',
-    id: jsonRpcRequest.id,
-    result: {
-      tools: [
-        {
-          name: 'test_providers',
-          description: 'Test EXPREZZZO API providers',
-          inputSchema: {
-            type: 'object',
-            properties: {},
-            required: []
-          }
-        },
-        {
-          name: 'orchestrate',
-          description: 'Run EXPREZZZO orchestration',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'object',
-                description: 'Data to orchestrate'
-              }
-            },
-            required: []
-          }
-        },
-        {
-          name: 'figma_components',
-          description: 'Get Figma components',
-          inputSchema: {
-            type: 'object',
-            properties: {},
-            required: []
-          }
-        }
-      ]
-    }
-  });
-}
-
-// Handle tool calls
-if (jsonRpcRequest.method === 'tools/call') {
-  const { name, arguments: args } = jsonRpcRequest.params;
+      body: JSON.stringify(params)
+    });
+    return response.json();
+  },
   
-  let endpoint: string;
-  let method = 'GET';
-  let data: any = undefined;
+  test_providers: async () => {
+    const response = await fetch(`${BASE_URL}/api/test-providers`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': API_KEY || ''
+      }
+    });
+    return response.json();
+  },
+  
+  get_figma_metadata: async () => {
+    const response = await fetch(`${BASE_URL}/api/figma`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': API_KEY || ''
+      }
+    });
+    return response.json();
+  },
+  
+  get_figma_components: async () => {
+    const response = await fetch(`${BASE_URL}/api/figma/components`, {
+      method: 'GET',
+      headers: {
+        'x-api-key': API_KEY || ''
+      }
+    });
+    return response.json();
+  }
+};
 
-  switch (name) {
-    case 'test_providers':
-      endpoint = '/api/test-providers';
-      break;
-    case 'orchestrate':
-      endpoint = '/api/orchestrate';
-      method = 'POST';
-      data = args?.data;
-      break;
-    case 'figma_components':
-      endpoint = '/api/figma/components';
-      break;
-    default:
+export async function POST(req: NextRequest) {
+  try {
+    const { method, params = {} } = await req.json();
+    
+    // Check if handler exists
+    const handler = handlers[method as keyof typeof handlers];
+    
+    if (!handler) {
       return NextResponse.json({
-        jsonrpc: '2.0',
-        id: jsonRpcRequest.id,
-        error: {
-          code: -32602,
-          message: `Unknown tool: ${name}`
-        }
-      });
-  }
-
-  // Make the actual API call
-  const response = await fetch(`https://exprezzzo-power.vercel.app${endpoint}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY
-    },
-    body: data ? JSON.stringify(data) : undefined
-  });
-
-  const result = await response.json();
-
-  return NextResponse.json({
-    jsonrpc: '2.0',
-    id: jsonRpcRequest.id,
-    result: {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }
-      ]
+        error: `Unknown method: ${method}`,
+        available: Object.keys(handlers)
+      }, { status: 400 });
     }
+    
+    // Execute handler
+    const result = await handler(params);
+    
+    return NextResponse.json({
+      success: true,
+      result
+    });
+    
+  } catch (error: any) {
+    console.error('MCP Server error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Internal server error'
+    }, { status: 500 });
+  }
+}
+
+// Handle OPTIONS for CORS
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
   });
 }
 
-// Unknown method
-return NextResponse.json({
-  jsonrpc: '2.0',
-  id: jsonRpcRequest.id,
-  error: {
-    code: -32601,
-    message: 'Method not found'
-  }
-});
-```
-
-} catch (error) {
-return NextResponse.json({
-jsonrpc: ‘2.0’,
-id: null,
-error: {
-code: -32700,
-message: ‘Parse error’
-}
-});
-}
-}
-
-export async function OPTIONS() {
-return new NextResponse(null, {
-status: 200,
-headers: {
-‘Access-Control-Allow-Origin’: ‘*’,
-‘Access-Control-Allow-Methods’: ‘POST, OPTIONS’,
-‘Access-Control-Allow-Headers’: ‘Content-Type’
-}
-});
+// Handle GET for health check
+export async function GET(req: NextRequest) {
+  return NextResponse.json({
+    status: 'healthy',
+    service: 'EXPREZZZO MCP Server',
+    version: '1.0.0',
+    methods: Object.keys(handlers)
+  });
 }
