@@ -72,3 +72,4 @@ jspm_packages/
 # Example: if you have a backend folder and don't want its node_modules committed
 # backend/node_modules/
 .vercel
+node_modules/
