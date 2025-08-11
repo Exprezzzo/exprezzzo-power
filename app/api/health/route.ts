@@ -8,8 +8,8 @@ export async function GET() {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     services: {
-      mcp_unified: await checkMCPHealth(),
-      orchestrate_v2: await checkOrchestrateHealth(),
+      mcp_unified: await checkService('/api/mcp-unified'),
+      orchestrate_v2: await checkService('/api/orchestrate-v2', 'POST'),
       playground: true,
       api_keys: true
     },
@@ -19,26 +19,20 @@ export async function GET() {
       exprezzzo_key: !!process.env.EXPREZZZO_API_KEY
     }
   };
-  
+
   return NextResponse.json(checks);
 }
 
-async function checkMCPHealth() {
+async function checkService(path: string, method: string = 'GET') {
   try {
-    const res = await fetch('http://localhost:3000/api/mcp-unified');
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function checkOrchestrateHealth() {
-  try {
-    const res = await fetch('http://localhost:3000/api/orchestrate-v2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test: true })
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL || 'https://exprezzzo-power.vercel.app'}${path}`,
+      {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        ...(method === 'POST' ? { body: JSON.stringify({ test: true }) } : {})
+      }
+    );
     return res.ok;
   } catch {
     return false;
