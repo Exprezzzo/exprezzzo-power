@@ -1,40 +1,46 @@
 // app/api/health/route.ts
-// Lightweight health check endpoint for monitoring and warming
-import { NextRequest, NextResponse } from 'next/server';
-import { allAIProviders } from '@/lib/ai-providers';
+import { NextResponse } from 'next/server';
 
-export const runtime = 'edge'; // Use edge runtime for fastest response
+export const runtime = 'edge';
 
-export async function GET(req: NextRequest) {
-  const startTime = Date.now();
-  
-  // Check all critical services
+export async function GET() {
   const checks = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    latency_ms: 0,
     services: {
-      ai_providers: allAIProviders.length,
-      providers_available: allAIProviders.map(p => p.id),
-      orchestrate_v2: true,
-      mcp_server: true,
+      mcp_unified: await checkMCPHealth(),
+      orchestrate_v2: await checkOrchestrateHealth(),
       playground: true,
       api_keys: true
     },
     environment: {
-      node_version: process.version,
-      vercel_region: process.env.VERCEL_REGION || 'unknown',
-      deployment_id: process.env.VERCEL_DEPLOYMENT_ID || 'local'
+      github_token: !!process.env.GITHUB_TOKEN,
+      figma_token: !!process.env.FIGMA_API_KEY,
+      exprezzzo_key: !!process.env.EXPREZZZO_API_KEY
     }
   };
   
-  checks.latency_ms = Date.now() - startTime;
-  
-  return NextResponse.json(checks, {
-    status: 200,
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'X-Response-Time': `${checks.latency_ms}ms`
-    }
-  });
+  return NextResponse.json(checks);
+}
+
+async function checkMCPHealth() {
+  try {
+    const res = await fetch('http://localhost:3000/api/mcp-unified');
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function checkOrchestrateHealth() {
+  try {
+    const res = await fetch('http://localhost:3000/api/orchestrate-v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: true })
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
