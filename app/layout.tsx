@@ -4,7 +4,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from '@/hooks/useAuth'; // NEW: Import AuthProvider
+import { AuthProvider } from '@/hooks/useAuth';
+import Navigation from '@/components/Navigation';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,9 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* Wrap children with AuthProvider to provide auth context to all components */}
         <AuthProvider>
-          {children}
+          <Navigation />
+          <main className="pt-16">
+            {children}
+          </main>
         </AuthProvider>
       </body>
     </html>
