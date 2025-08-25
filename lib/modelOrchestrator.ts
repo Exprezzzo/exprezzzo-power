@@ -457,4 +457,4 @@ export function getModelRecommendation(prompt: string, context?: string[]): {
   };
 }
 
-export { ModelOrchestrator };
+// ModelOrchestrator already exported above

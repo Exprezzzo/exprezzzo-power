@@ -1,8 +1,25 @@
 // lib/sessionQueue.ts
 // Enterprise-grade session queue with Bull, Redis, and priority management
 
-import Bull, { Queue, Job, JobOptions } from 'bull';
-import { Redis } from 'ioredis';
+// Import Bull and Redis only when needed to avoid build issues
+let Bull: any;
+let Queue: any;
+let Job: any;
+let JobOptions: any;
+let Redis: any;
+
+try {
+  const bullModule = require('bull');
+  Bull = bullModule.default || bullModule;
+  Queue = bullModule.Queue;
+  Job = bullModule.Job;
+  JobOptions = bullModule.JobOptions;
+  
+  const redisModule = require('ioredis');
+  Redis = redisModule.Redis || redisModule.default || redisModule;
+} catch (error) {
+  console.warn('Bull/Redis not available in build environment');
+}
 import { PlaygroundSession, BaseMessage, ModelId } from '@/types/ai-playground';
 
 // Job types
