@@ -14,18 +14,24 @@ export default function HomePage() {
         {user ? (
           <div className="flex items-center space-x-4">
             <span className="text-sm">{user.email}</span>
-            <button
-              onClick={logOut}
-              className="text-blue-400 hover:underline"
+            <Link
+              href="/playground"
+              className="text-green-400 hover:underline font-semibold"
             >
-              Logout
-            </button>
+              🧪 AI Playground
+            </Link>
             <Link
               href="/dashboard"
               className="text-blue-400 hover:underline"
             >
               Dashboard
             </Link>
+            <button
+              onClick={logOut}
+              className="text-red-400 hover:underline"
+            >
+              Logout
+            </button>
           </div>
         ) : (
           <Link href="/login" className="text-blue-400 hover:underline">
