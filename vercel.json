@@ -15,5 +15,6 @@
       "source": "/api/orchestrate",
       "destination": "/api/orchestrate-v2"
     }
-  ]
+  ],
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- lib/embeddings.ts"
 }
