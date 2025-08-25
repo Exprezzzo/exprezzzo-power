@@ -1,78 +1,33 @@
 'use client';
 
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
-import { Brain, Zap, Gem, Rocket } from 'lucide-react';
-import { PaymentButton } from '@/components/PaymentButton';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
-  const { user, logOut } = useAuth();
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
-      <header className="absolute top-4 right-4 z-10">
-        {user ? (
-          <div className="flex items-center space-x-4">
-            <span className="text-sm">{user.email}</span>
-            <Link
-              href="/playground"
-              className="text-green-400 hover:underline font-semibold"
-            >
-              🧪 AI Playground
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-blue-400 hover:underline"
-            >
-              Dashboard
-            </Link>
-            <button
-              onClick={logOut}
-              className="text-red-400 hover:underline"
-            >
-              Logout
-            </button>
-          </div>
-        ) : (
-          <Link href="/login" className="text-blue-400 hover:underline">
-            Login
-          </Link>
-        )}
-      </header>
-
-      <main className="flex flex-col items-center text-center">
-        <h1 className="text-4xl font-bold mb-6">Welcome to EXPREZZZO Power</h1>
-        <p className="mb-8 max-w-lg">
-          The unified AI orchestration platform — route prompts to multiple
-          providers for optimal performance, cost, and reliability.
-        </p>
-
-        {/* Icons Section */}
-        <div className="flex space-x-6 mb-8">
-          <div className="flex flex-col items-center">
-            <Brain className="h-8 w-8 text-blue-400" />
-            <span className="mt-2 text-sm">Intelligence</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Zap className="h-8 w-8 text-yellow-400" />
-            <span className="mt-2 text-sm">Speed</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Gem className="h-8 w-8 text-green-400" />
-            <span className="mt-2 text-sm">Value</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Rocket className="h-8 w-8 text-red-400" />
-            <span className="mt-2 text-sm">Launch</span>
-          </div>
+    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center">
+      <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-8">
+        EXPREZZZO Power
+      </h1>
+      
+      <p className="text-gray-300 mb-8">AI Orchestration Platform</p>
+      
+      <div className="space-y-4">
+        <button
+          onClick={() => router.push('/playground')}
+          className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-lg"
+        >
+          🚀 Launch Playground (No Login Required)
+        </button>
+        
+        <div className="flex gap-4 text-sm">
+          <span className="text-green-400">✅ OpenAI Active</span>
+          <span className="text-green-400">✅ Anthropic Active</span>
+          <span className="text-green-400">✅ Gemini Active</span>
+          <span className="text-green-400">✅ Groq Active</span>
         </div>
-
-        {/* Payment Button */}
-        <PaymentButton
-          priceId="price_123456789"
-          buttonText="Get Started"
-        />
-      </main>
+      </div>
     </div>
   );
 }
