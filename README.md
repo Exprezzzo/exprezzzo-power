@@ -4,7 +4,7 @@
 
 ## Overview
 
-Exprezzzo Power is a secure, modular, and scalable SaaS platform offering a unified API for cutting-edge AI models alongside a user-friendly AI playground. Designed for high-availability, rapid onboarding, and cost-optimized delivery, Exprezzzo Power enables seamless integration with leading LLMs and provides a superior user experience, all behind a single, unified API.
+Exprezzzo Power is a secure, modular, and scalable SaaS platform offering a unified API for cutting-edge AI models alongside a user-friendly AI playground. Designed for high-availability, rapid onboarding, and cost-optimized delivery, Exprezzzo Power enables seamless integration with leading LLMs and provides a superior user experience, all behind a single,unified API.
 
 -   **🔒 Enterprise-grade security:** Built with modern best practices for authentication, access control, and data privacy.
 -   **⚡ Lightning-fast API gateway:** Aggregate multiple AI models (OpenAI, Google Gemini, Claude, Groq) via a single, unified endpoint with intelligent routing for performance and cost savings.
