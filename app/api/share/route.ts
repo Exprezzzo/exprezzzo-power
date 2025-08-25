@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AISession } from '@/types/ai-playground';
-import { Collection, MongoClient } from 'mongodb';
 import crypto from 'crypto';
-import bcrypt from 'bcrypt';
+// Import MongoDB and bcrypt only when needed to avoid build issues
+let MongoClient: any;
+let Collection: any;
+let bcrypt: any;
+
+try {
+  const mongodb = require('mongodb');
+  MongoClient = mongodb.MongoClient;
+  Collection = mongodb.Collection;
+} catch (error) {
+  console.warn('MongoDB not available in build environment');
+}
+
+try {
+  bcrypt = require('bcrypt');
+} catch (error) {
+  console.warn('bcrypt not available in build environment');
+}
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 const DB_NAME = 'exprezzzo_shares';

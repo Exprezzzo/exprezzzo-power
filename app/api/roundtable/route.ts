@@ -110,7 +110,7 @@ async function executeRoundtable(
 
     try {
       // Import the chat route logic to reuse model execution
-      const { executeNonStreamingRequest } = await import('./chat/route');
+      const { executeNonStreamingRequest } = await import('../chat/route');
       
       // Mock session settings if not provided
       const sessionSettings = {

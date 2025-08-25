@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SessionQueueManager } from '@/lib/sessionQueue';
 import { AISession, AIMessage } from '@/types/ai-playground';
-import { Collection, MongoClient } from 'mongodb';
-import JSZip from 'jszip';
+// Import MongoDB and JSZip only when needed to avoid build issues
+let MongoClient: any;
+let Collection: any;
+let JSZip: any;
+
+try {
+  const mongodb = require('mongodb');
+  MongoClient = mongodb.MongoClient;
+  Collection = mongodb.Collection;
+} catch (error) {
+  console.warn('MongoDB not available in build environment');
+}
+
+try {
+  JSZip = require('jszip');
+} catch (error) {
+  console.warn('JSZip not available in build environment');
+}
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 const DB_NAME = 'exprezzzo_sessions';
