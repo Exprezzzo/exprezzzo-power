@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import formidable from 'formidable';
+import os from 'os';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+// Use temp directory for Vercel serverless functions
+const UPLOAD_DIR = path.join(os.tmpdir(), 'uploads');
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export async function POST(req: NextRequest) {
@@ -20,14 +21,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'File too large. Max 50MB' }, { status: 400 });
     }
 
-    // Create uploads directory
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
-    // Generate unique filename
+    // Generate unique filename  
     const fileId = crypto.randomUUID();
     const ext = path.extname(file.name);
     const filename = `${fileId}${ext}`;
-    const filepath = path.join(UPLOAD_DIR, filename);
+    
+    // For Vercel, save to temp directory
+    const filepath = path.join(os.tmpdir(), filename);
     
     // Save file
     const bytes = await file.arrayBuffer();
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       success: true,
       fileId,
       filename,
-      url: `/uploads/${filename}`,
+      url: `/api/files/${fileId}${ext}`, // Note: files are temporary in serverless
       mimeType: file.type,
       size: file.size,
       processed: processedData,

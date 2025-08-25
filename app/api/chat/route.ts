@@ -49,7 +49,18 @@ interface ChatRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json();
-    const { messages, settings, stream = true, preferredModel } = body;
+    const { messages, stream = true, preferredModel } = body;
+    
+    // Provide default settings if none provided
+    const settings: SessionSettings = body.settings || {
+      temperature: 0.7,
+      maxTokens: 1000,
+      modelSelection: 'gpt-4',
+      streamingEnabled: true,
+      contextWindow: 4000,
+      systemPrompt: '',
+      timeoutMs: 30000
+    };
 
     // Validate required fields
     if (!messages || messages.length === 0) {
