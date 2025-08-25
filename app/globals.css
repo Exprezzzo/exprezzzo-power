@@ -1,10 +1,275 @@
 /* app/globals.css */
+/* Vegas Gold Playground Theme with Glassmorphic Design */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Blob animations */
+/* CSS Variables for Vegas Gold Theme */
+:root {
+  /* Vegas Color Palette */
+  --vegas-gold: #FFD700;
+  --vegas-gold-dark: #B8860B;
+  --vegas-gold-light: #FFED4E;
+  --vegas-black: #0A0A0A;
+  --vegas-rich-black: #1A1A1A;
+  --vegas-orange: #FF6B35;
+  --vegas-red: #DC2626;
+  --vegas-green: #059669;
+  
+  /* Glass Colors */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg-hover: rgba(255, 255, 255, 0.1);
+  --glass-bg-active: rgba(255, 215, 0, 0.1);
+  --glass-border: rgba(255, 215, 0, 0.2);
+  --glass-border-hover: rgba(255, 215, 0, 0.4);
+  
+  /* Text Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B0B0B0;
+  --text-muted: #6B7280;
+  --text-gold: #FFD700;
+}
+
+@layer base {
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background: var(--vegas-black);
+    color: var(--text-primary);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--vegas-rich-black);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--glass-border-hover);
+  }
+}
+
+@layer components {
+  /* Glassmorphic Card Base */
+  .glass-card {
+    @apply backdrop-blur-xl border rounded-xl;
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px rgba(255, 215, 0, 0.1);
+  }
+
+  /* Vegas Button Variants */
+  .btn-vegas-primary {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+    background: linear-gradient(135deg, var(--vegas-gold), var(--vegas-gold-dark));
+    color: var(--vegas-black);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+  }
+
+  .btn-vegas-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.5);
+  }
+
+  .btn-vegas-secondary {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300;
+    background: var(--glass-bg);
+    color: var(--text-gold);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+  }
+
+  .btn-vegas-secondary:hover {
+    background: var(--glass-bg-active);
+    border-color: var(--glass-border-hover);
+    transform: translateY(-1px);
+  }
+
+  /* Vegas Input Styles */
+  .input-vegas {
+    @apply px-4 py-3 rounded-xl border outline-none transition-all duration-300;
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    color: var(--text-primary);
+    backdrop-filter: blur(12px);
+  }
+
+  .input-vegas:focus {
+    background: var(--glass-bg-hover);
+    border-color: var(--vegas-gold);
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+  }
+
+  .input-vegas::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Vegas Slider */
+  .slider-vegas {
+    @apply appearance-none bg-transparent cursor-pointer;
+  }
+
+  .slider-vegas::-webkit-slider-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--glass-border);
+  }
+
+  .slider-vegas::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full cursor-pointer;
+    background: var(--vegas-gold);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    transition: all 0.2s ease;
+  }
+
+  .slider-vegas::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.6);
+  }
+
+  /* Vegas Toggle */
+  .toggle-vegas {
+    @apply relative inline-flex items-center cursor-pointer;
+  }
+
+  .toggle-vegas input {
+    @apply sr-only;
+  }
+
+  .toggle-vegas .toggle-bg {
+    @apply w-12 h-6 rounded-full transition-colors duration-300;
+    background: var(--glass-border);
+  }
+
+  .toggle-vegas input:checked + .toggle-bg {
+    background: var(--vegas-gold);
+  }
+
+  .toggle-vegas .toggle-dot {
+    @apply absolute left-1 top-1 w-4 h-4 rounded-full transition-transform duration-300;
+    background: var(--text-primary);
+  }
+
+  .toggle-vegas input:checked ~ .toggle-dot {
+    transform: translateX(1.5rem);
+  }
+
+  /* Code block styling */
+  .code-block-vegas {
+    @apply rounded-xl p-4 font-mono text-sm;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+  }
+
+  /* Message bubbles */
+  .message-user {
+    @apply ml-auto max-w-2xl;
+    background: linear-gradient(135deg, var(--vegas-gold), var(--vegas-gold-dark));
+    color: var(--vegas-black);
+  }
+
+  .message-assistant {
+    @apply mr-auto max-w-4xl glass-card;
+  }
+
+  /* Status indicators */
+  .status-online {
+    @apply w-2 h-2 rounded-full bg-green-400;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  }
+
+  .status-offline {
+    @apply w-2 h-2 rounded-full bg-red-400;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+  }
+
+  .status-degraded {
+    @apply w-2 h-2 rounded-full bg-yellow-400;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+  }
+}
+
+@layer utilities {
+  /* Vegas Gold Gradient Backgrounds */
+  .bg-vegas-gradient {
+    background: linear-gradient(135deg, var(--vegas-black) 0%, var(--vegas-rich-black) 100%);
+  }
+
+  .bg-vegas-gold-gradient {
+    background: linear-gradient(135deg, var(--vegas-gold) 0%, var(--vegas-gold-dark) 100%);
+  }
+
+  .bg-vegas-card-gradient {
+    background: linear-gradient(135deg, 
+      rgba(255, 215, 0, 0.05) 0%, 
+      rgba(255, 215, 0, 0.02) 100%);
+  }
+
+  /* Text gradients */
+  .text-vegas-gradient {
+    background: linear-gradient(135deg, var(--vegas-gold), var(--vegas-gold-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass effects */
+  .glass-blur {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .glass-blur-sm {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .glass-blur-lg {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  /* Vegas animations */
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-gold {
+    animation: pulseGold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Blob animations (enhanced) */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
   33% { transform: translate(30px, -50px) scale(1.1); }
@@ -24,10 +289,68 @@
   animation-delay: 4s;
 }
 
-/* Fade in animations */
+/* Vegas-specific animations */
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulseGold {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+  }
+}
+
+/* Fade in animations (enhanced) */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .animate-fade-in {
@@ -44,15 +367,24 @@
   opacity: 0;
 }
 
-/* Ensure body and html are full height for correct layout */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden; /* Prevent horizontal scroll */
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s ease-out forwards;
 }
 
-/* Basic reset to ensure consistent styling */
-* {
-  box-sizing: border-box;
+.animate-slide-in-left {
+  animation: slide-in-left 0.5s ease-out forwards;
+}
+
+/* Print styles */
+@media print {
+  .glass-card {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+  
+  .text-vegas-gradient {
+    -webkit-text-fill-color: initial !important;
+    color: #B8860B !important;
+  }
 }
