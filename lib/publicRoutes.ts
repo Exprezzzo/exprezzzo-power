@@ -15,7 +15,8 @@ export const publicRoutes = [
   '/terms',
   '/success',
   '/checkout', // Checkout page is public for guest users
-  '/invite' // Invite page is public
+  '/invite', // Invite page is public
+  '/playground' // AI Playground is completely public for launch
 ];
 
 export const isPublicRoute = (pathname: string): boolean => {
