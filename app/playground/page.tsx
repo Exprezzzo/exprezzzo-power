@@ -1,7 +1,7 @@
 'use client';
 
-import AIPlayground from '@/components/AIPlayground';
+import EnhancedAIPlayground from '@/components/EnhancedAIPlayground';
 
 export default function PlaygroundPage() {
-  return <AIPlayground />;
+  return <EnhancedAIPlayground />;
 }

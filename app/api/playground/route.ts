@@ -39,10 +39,29 @@ export async function POST(req: NextRequest) {
           try {
             console.log(`[Playground API] Starting stream with ${selectedProvider.name}`);
             
+            let totalTokens = 0;
+            let fullContent = '';
+            
             for await (const chunk of selectedProvider.streamChatCompletion(messages as AIChatMessage[], options)) {
-              const data = JSON.stringify({ content: chunk });
+              fullContent += chunk;
+              totalTokens = Math.floor(fullContent.length / 4); // Rough token estimation
+              
+              const data = JSON.stringify({ 
+                content: chunk,
+                tokens: totalTokens,
+                provider: selectedProvider.name
+              });
               controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             }
+            
+            // Send final metrics
+            const finalData = JSON.stringify({
+              type: 'metrics',
+              tokens: totalTokens,
+              content_length: fullContent.length,
+              provider: selectedProvider.name
+            });
+            controller.enqueue(encoder.encode(`data: ${finalData}\n\n`));
             
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             console.log(`[Playground API] Stream completed for ${selectedProvider.name}`);
@@ -70,7 +89,13 @@ export async function POST(req: NextRequest) {
         for await (const chunk of selectedProvider.streamChatCompletion(messages as AIChatMessage[], options)) {
           fullContent += chunk;
         }
-        return NextResponse.json({ content: fullContent });
+        const tokens = Math.floor(fullContent.length / 4);
+        return NextResponse.json({ 
+          content: fullContent,
+          tokens: tokens,
+          content_length: fullContent.length,
+          provider: selectedProvider.name
+        });
       } catch (error: any) {
         console.error(`[Playground API] Error:`, error);
         return NextResponse.json({ error: error.message }, { status: 500 });
