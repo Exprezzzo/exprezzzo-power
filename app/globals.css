@@ -29,6 +29,32 @@
   --text-secondary: #B0B0B0;
   --text-muted: #6B7280;
   --text-gold: #FFD700;
+
+  /* Mobile-first Chat Variables (320px+) */
+  --chat-padding: 0.75rem;
+  --message-max-width: 85%;
+  --avatar-size: 2rem;
+  --header-height: 3.5rem;
+  --input-height: 3rem;
+}
+
+/* Tablet responsive variables (768px+) */
+@media (min-width: 768px) {
+  :root {
+    --chat-padding: 1.5rem;
+    --message-max-width: 70%;
+    --avatar-size: 2.25rem;
+    --header-height: 4rem;
+    --input-height: 3.5rem;
+  }
+}
+
+/* Desktop responsive variables (1024px+) */
+@media (min-width: 1024px) {
+  :root {
+    --chat-padding: 2rem;
+    --message-max-width: 65%;
+  }
 }
 
 @layer base {
@@ -68,6 +94,279 @@
 }
 
 @layer components {
+  /* Touch-optimized component sizes */
+  .touch-button {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px 16px;
+    margin: 4px;
+  }
+
+  .touch-input {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .touch-icon-button {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+  }
+
+  /* Invisible touch target expansion */
+  .small-button {
+    position: relative;
+  }
+
+  .small-button::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    background: transparent;
+    border-radius: inherit;
+  }
+
+  /* Enhanced touch feedback */
+  .touch-feedback {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.1s ease-out, background-color 0.15s ease-out;
+  }
+
+  .touch-feedback:active {
+    transform: scale(0.96);
+  }
+
+  /* iOS-specific optimizations */
+  .ios-input {
+    -webkit-appearance: none;
+    border-radius: 8px;
+    font-size: 16px; /* Prevents zoom */
+  }
+
+  /* Safe area handling for notched devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  /* Keyboard-aware bottom spacing */
+  .keyboard-adjust {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  /* Modern viewport units for chat interface */
+  .chat-container {
+    /* Fallback for older browsers */
+    height: 100vh;
+    height: -webkit-fill-available;
+    
+    /* Modern dynamic viewport height */
+    height: 100dvh;
+    
+    /* Safe area handling for notched devices */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Main chat grid layout */
+  .chat-app {
+    display: grid;
+    grid-template-areas: 
+      "header"
+      "messages"
+      "input";
+    grid-template-rows: auto 1fr auto;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Prevent input zoom on iOS - global rule */
+  input, textarea, select {
+    font-size: 16px;
+  }
+
+  /* Handle virtual keyboard with dynamic viewport */
+  .chat-messages {
+    /* Fallback calculation */
+    height: calc(100vh - var(--header-height) - var(--input-height));
+    height: calc(-webkit-fill-available - var(--header-height) - var(--input-height));
+    
+    /* Modern dynamic viewport calculation */
+    height: calc(100dvh - var(--header-height) - var(--input-height));
+    
+    /* Keyboard handling */
+    padding-bottom: env(keyboard-inset-height, 0);
+  }
+
+  /* Large viewport units for full-screen components */
+  .fullscreen-container {
+    /* Fallback */
+    width: 100vw;
+    height: 100vh;
+    
+    /* Large viewport units */
+    width: 100lvw;
+    height: 100lvh;
+  }
+
+  /* Small viewport units for mobile-first design */
+  .mobile-container {
+    /* Small viewport units (excluding toolbars) */
+    width: 100svw;
+    height: 100svh;
+  }
+
+  /* Advanced keyboard handling */
+  .keyboard-aware {
+    /* Dynamic adjustment for virtual keyboard */
+    min-height: 100dvh;
+    padding-bottom: env(keyboard-inset-height, env(safe-area-inset-bottom));
+    transition: padding-bottom 0.3s ease-out;
+  }
+
+  /* Bottom navigation spacing */
+  .bottom-nav-spacing {
+    /* Reserve space for bottom navigation on mobile */
+    padding-bottom: 64px; /* 4rem */
+  }
+  
+  @media (min-width: 768px) {
+    .bottom-nav-spacing {
+      padding-bottom: 0;
+    }
+  }
+
+  /* Mobile-first bottom navigation */
+  .mobile-bottom-nav {
+    /* Optimal height for mobile navigation */
+    min-height: 56px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Messages flexbox container */
+  .messages-container {
+    grid-area: messages;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 1rem;
+    gap: 0.75rem;
+    background: var(--vegas-black);
+  }
+
+  /* Individual message alignment */
+  .message {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 85%;
+    transition: all 0.2s ease;
+  }
+
+  .message.own {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+
+  .message.assistant {
+    align-self: flex-start;
+  }
+
+  /* Input area flexbox */
+  .input-area {
+    grid-area: input;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--vegas-rich-black);
+    border-top: 1px solid var(--glass-border);
+  }
+
+  /* Header area */
+  .header-area {
+    grid-area: header;
+    background: var(--vegas-rich-black);
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Sidebar area */
+  .sidebar-area {
+    grid-area: sidebar;
+    background: var(--vegas-rich-black);
+    border-right: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: none; /* Hidden by default on mobile */
+  }
+
+  /* Desktop layout adjustments */
+  @media (min-width: 768px) {
+    .chat-app {
+      grid-template-areas: 
+        "sidebar header"
+        "sidebar messages"
+        "sidebar input";
+      grid-template-columns: 320px 1fr;
+    }
+    
+    .sidebar-area {
+      display: block;
+    }
+    
+    .messages-container {
+      padding: 1.5rem;
+    }
+    
+    .message {
+      max-width: 70%;
+    }
+  }
+
+  /* Large desktop layout */
+  @media (min-width: 1200px) {
+    .chat-app {
+      grid-template-columns: 360px 1fr;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .messages-container {
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .message {
+      max-width: 65%;
+    }
+  }
+
   /* Glassmorphic Card Base */
   .glass-card {
     @apply backdrop-blur-xl border rounded-xl;
