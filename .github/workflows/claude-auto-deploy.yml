@@ -1,0 +1,54 @@
+# .github/workflows/claude-auto-deploy.yml
+name: Claude Auto-Deploy
+on:
+  push:
+    branches: ['claude/*']
+  pull_request:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+
+jobs:
+  auto-deploy:
+    if: |
+      startsWith(github.ref, 'refs/heads/claude/') ||
+      contains(github.event.label.name, 'claude-approved') ||
+      contains(github.event.comment.body, '/claude')
+    
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Auto-merge Claude branches
+        if: startsWith(github.ref, 'refs/heads/claude/')
+        run: |
+          git config user.name "Claude Deploy Bot"
+          git config user.email "claude@exprezzzo.com"
+          git checkout main
+          git merge --no-ff ${{ github.ref }}
+          git push origin main
+      
+      - name: Extract Claude Artifacts
+        if: contains(github.event.comment.body, '```')
+        run: |
+          echo "${{ github.event.comment.body }}" | \
+          sed -n '/```/,/```/p' | \
+          sed '1d;$d' > claude-artifact.tmp
+          
+      - name: Apply Claude Changes
+        run: |
+          TARGET_FILE=$(echo "${{ github.event.comment.body }}" | \
+                       grep -oP 'file:\s*\K[\S]+' || echo "auto-detect")
+          
+          if [ "$TARGET_FILE" = "auto-detect" ]; then
+            if grep -q "import.*from.*react" claude-artifact.tmp; then
+              TARGET_FILE="components/NewComponent.tsx"
+            elif grep -q "export.*async.*function.*POST" claude-artifact.tmp; then
+              TARGET_FILE="app/api/new/route.ts"
+            fi
+          fi
+          
+          cp claude-artifact.tmp "$TARGET_FILE"
+          git add -A
+          git commit -m "Claude: Auto-applied changes to $TARGET_FILE"
+          git push

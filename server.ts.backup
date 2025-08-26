@@ -1,0 +1,35 @@
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
+import { rateLimiter } from "./api/middleware/rateLimit";
+import authRoutes from "./api/routes/auth";
+import metricsRoutes from "./api/routes/metrics";
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(rateLimiter);
+
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/metrics", metricsRoutes);
+
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "PowerUI API is running!" });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+app.listen(PORT, () => {
+  console.log(`PowerUI backend running on http://localhost:${PORT}`);
+});

@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "app/api/mcp-unified/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/orchestrate-v2/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/health/route.ts": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/orchestrate",
+      "destination": "/api/orchestrate-v2"
+    }
+  ],
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- lib/embeddings.ts"
+}
