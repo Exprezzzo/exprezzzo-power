@@ -1,14 +1,11 @@
 {
   "compilerOptions": {
-<<<<<<< HEAD
     "target": "ES2017",
-=======
-    "target": "ES2022",
->>>>>>> 9546d38bc316d4b5cda95adb16e8225b83af8175
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -17,33 +14,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-<<<<<<< HEAD
-=======
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/components/*": ["components/*"],
-      "@/lib/*": ["lib/*"],
-      "@/hooks/*": ["hooks/*"],
-      "@/types/*": ["types/*"],
-      "@/utils/*": ["utils/*"]
-    },
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitOverride": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "useUnknownInCatchVariables": true,
->>>>>>> 9546d38bc316d4b5cda95adb16e8225b83af8175
     "plugins": [
       {
         "name": "next"
       }
-<<<<<<< HEAD
     ],
     "paths": {
       "@/*": ["./*"]
@@ -51,21 +25,4 @@
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
-=======
-    ]
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "backend",
-    ".next",
-    "out",
-    "public"
-  ]
->>>>>>> 9546d38bc316d4b5cda95adb16e8225b83af8175
 }
