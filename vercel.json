@@ -1,12 +1,16 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
+  "devCommand": "npm run dev",
   "installCommand": "npm install --legacy-peer-deps",
-  "regions": ["iad1"],
-  "functions": {
-    "app/api/chat/route.ts": {
-      "maxDuration": 30
+  "framework": "nextjs",
+  "env": {
+    "VERCEL_FORCE_NO_BUILD_CACHE": "1"
+  },
+  "build": {
+    "env": {
+      "VERCEL_FORCE_NO_BUILD_CACHE": "1",
+      "NEXT_TELEMETRY_DISABLED": "1"
     }
   }
 }
