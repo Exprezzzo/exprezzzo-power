@@ -1,0 +1,17 @@
+@/hooks/useAuth
+@/lib/ai-providers
+@/lib/constants
+@/lib/firebase
+@/lib/firebaseAdmin
+@/lib/modelOrchestrator
+@/lib/utils
+@/types/ai-playground
+crypto
+firebase-admin/auth
+firebase-admin/firestore
+firebase/auth
+firebase/firestore
+fs/promises
+os
+path
+stripe

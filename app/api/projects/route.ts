@@ -453,31 +453,31 @@ function estimateTokens(text: string): number {
   // Use a more conservative estimate
   return Math.ceil(Math.max(words * 1.3, characters / 3.5));
 }
-
-// Helper function to check if context needs summarization
-export async function checkContextLimits(projectId: string): Promise<{
-  needsSummarization: boolean;
-  currentTokens: number;
-  exceedsLimit: boolean;
-}> {
-  const adminApp = getAdminApp();
-  if (!adminApp) {
-    throw new Error('Firebase admin not initialized');
-  }
-
-  const db = getFirestore(adminApp);
-  const projectRef = db.collection('projects').doc(projectId);
-  const projectDoc = await projectRef.get();
-  
-  if (!projectDoc.exists) {
-    throw new Error('Project not found');
-  }
-
-  const currentTokens = projectDoc.data()?.contextTokens || 0;
-  
-  return {
-    needsSummarization: currentTokens >= SUMMARIZATION_THRESHOLD,
-    currentTokens,
-    exceedsLimit: currentTokens >= MAX_CONTEXT_TOKENS
-  };
-}
+// 
+// // Helper function to check if context needs summarization
+// async function checkContextLimits(projectId: string): Promise<{
+//   needsSummarization: boolean;
+//   currentTokens: number;
+//   exceedsLimit: boolean;
+// }> {
+//   const adminApp = getAdminApp();
+//   if (!adminApp) {
+//     throw new Error('Firebase admin not initialized');
+//   }
+// 
+//   const db = getFirestore(adminApp);
+//   const projectRef = db.collection('projects').doc(projectId);
+//   const projectDoc = await projectRef.get();
+//   
+//   if (!projectDoc.exists) {
+//     throw new Error('Project not found');
+//   }
+// 
+//   const currentTokens = projectDoc.data()?.contextTokens || 0;
+//   
+//   return {
+//     needsSummarization: currentTokens >= SUMMARIZATION_THRESHOLD,
+//     currentTokens,
+//     exceedsLimit: currentTokens >= MAX_CONTEXT_TOKENS
+//   };
+// }

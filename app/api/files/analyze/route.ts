@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Analysis error:', error);
     return NextResponse.json(
-      { error: 'Analysis failed', details: error.message },
+      { error: 'Analysis failed', details: (error as Error).message || 'Unknown error' },
       { status: 500 }
     );
   }
