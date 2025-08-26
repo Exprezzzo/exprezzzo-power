@@ -1,5 +1,9 @@
 'use client';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-static';
+export const revalidate = 3600;
+
 import { useState, useEffect, useRef } from 'react';
 import { Menu, Send, X, Brain, MessageSquare } from 'lucide-react';
 
@@ -76,7 +80,7 @@ export default function ChatPage() {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Error: ${error.message}`
+        content: 'Error: Failed to get response. Please try again.'
       }]);
     } finally {
       setIsLoading(false);
@@ -100,33 +104,35 @@ export default function ChatPage() {
             <h2 className="text-xl font-bold text-yellow-500">EXPREZZZO</h2>
             <button 
               onClick={() => setIsSidebarOpen(false)}
-              className="md:hidden p-2"
+              className="md:hidden p-2 text-white hover:text-yellow-500"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-semibold py-3 px-4 rounded-lg">
+          <button className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-semibold py-3 px-4 rounded-lg transition-colors">
             New Chat
           </button>
         </div>
         <div className="p-4">
           <h3 className="text-sm text-gray-400 mb-3">Recent Chats</h3>
           <div className="space-y-2">
-            <div className="p-3 hover:bg-gray-800 rounded-lg cursor-pointer">
-              <MessageSquare className="w-4 h-4 text-gray-500 inline mr-2" />
-              <span className="text-sm">Previous Chat</span>
+            <div className="p-3 hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-white">Previous Chat</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col">
-        <div className="bg-gray-900 bg-opacity-50 border-b border-yellow-600 border-opacity-20 px-4 py-3">
+        <div className="bg-gray-900 bg-opacity-50 backdrop-blur-sm border-b border-yellow-600 border-opacity-20 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
-                className="md:hidden p-2"
+                className="md:hidden p-2 text-white hover:text-yellow-500"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -136,7 +142,7 @@ export default function ChatPage() {
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className="px-3 py-1 bg-gray-800 border border-yellow-600 border-opacity-20 rounded text-sm"
+              className="px-3 py-1 bg-gray-800 border border-yellow-600 border-opacity-20 rounded text-sm text-white"
             >
               <option value="groq">Groq</option>
               <option value="openai">GPT-4</option>
@@ -162,7 +168,7 @@ export default function ChatPage() {
                 <div className={`max-w-xs md:max-w-2xl px-4 py-3 rounded-2xl ${
                   msg.role === 'user' 
                     ? 'bg-yellow-600 text-black' 
-                    : 'bg-gray-800 border border-gray-700'
+                    : 'bg-gray-800 border border-gray-700 text-white'
                 }`}>
                   <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                 </div>
@@ -183,7 +189,7 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-yellow-600 border-opacity-20 p-4 bg-gray-900 bg-opacity-50">
+        <div className="border-t border-yellow-600 border-opacity-20 p-4 bg-gray-900 bg-opacity-50 backdrop-blur-sm">
           <div className="flex gap-2">
             <input
               type="text"
@@ -191,14 +197,12 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="Type your message..."
-              className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400"
-              style={{ minHeight: '44px' }}
+              className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-600"
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || isLoading}
-              className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-black font-semibold rounded-lg disabled:opacity-50"
-              style={{ minWidth: '44px', minHeight: '44px' }}
+              className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-black font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <Send className="w-5 h-5" />
             </button>
