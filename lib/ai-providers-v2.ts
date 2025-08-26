@@ -1,3 +1,8 @@
+import { OpenAI } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
+
 export const AI_MODELS = {
   openai: [
     { id: 'gpt-4-turbo-preview', name: 'GPT-4 Turbo', cost: 0.01 },
@@ -29,4 +34,141 @@ export const AI_MODELS = {
   perplexity: [
     { id: 'pplx-70b-online', name: 'Perplexity 70B Online', cost: 0.001 }
   ]
+};
+
+interface AIProvider {
+  id: string;
+  name: string;
+  client: any;
+  models: typeof AI_MODELS[keyof typeof AI_MODELS];
+}
+
+class AIProviderManager {
+  private providers: Map<string, AIProvider> = new Map();
+  private initialized = false;
+
+  constructor() {
+    if (!this.initialized) {
+      this.initializeProviders();
+      this.initialized = true;
+    }
+  }
+
+  private initializeProviders() {
+    // Initialize OpenAI
+    if (process.env.OPENAI_API_KEY) {
+      const openaiClient = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+      this.providers.set('openai', {
+        id: 'openai',
+        name: 'OpenAI',
+        client: openaiClient,
+        models: AI_MODELS.openai
+      });
+    }
+
+    // Initialize Anthropic
+    if (process.env.ANTHROPIC_API_KEY) {
+      const anthropicClient = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY
+      });
+      this.providers.set('anthropic', {
+        id: 'anthropic',
+        name: 'Anthropic',
+        client: anthropicClient,
+        models: AI_MODELS.anthropic
+      });
+    }
+
+    // Initialize Google Gemini
+    if (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY) {
+      const geminiClient = new GoogleGenerativeAI(
+        process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || ''
+      );
+      this.providers.set('gemini', {
+        id: 'gemini',
+        name: 'Google Gemini',
+        client: geminiClient,
+        models: AI_MODELS.google
+      });
+    }
+
+    // Initialize Groq
+    if (process.env.GROQ_API_KEY) {
+      const groqClient = new Groq({
+        apiKey: process.env.GROQ_API_KEY
+      });
+      this.providers.set('groq', {
+        id: 'groq',
+        name: 'Groq',
+        client: groqClient,
+        models: AI_MODELS.groq
+      });
+    }
+  }
+
+  getProvider(providerId: string): AIProvider | null {
+    return this.providers.get(providerId) || null;
+  }
+
+  getAllProviders(): AIProvider[] {
+    return Array.from(this.providers.values());
+  }
+
+  getProviderIds(): string[] {
+    return Array.from(this.providers.keys());
+  }
+
+  hasProvider(providerId: string): boolean {
+    return this.providers.has(providerId);
+  }
+
+  getProviderCount(): number {
+    return this.providers.size;
+  }
+}
+
+// Export singleton instance
+let aiProviderManagerInstance: AIProviderManager | null = null;
+
+export function getAIProviderManager(): AIProviderManager {
+  if (!aiProviderManagerInstance) {
+    aiProviderManagerInstance = new AIProviderManager();
+  }
+  return aiProviderManagerInstance;
+}
+
+// Helper function to get a specific provider client
+export function getProviderClient(providerId: string): any {
+  const manager = getAIProviderManager();
+  const provider = manager.getProvider(providerId);
+  return provider ? provider.client : null;
+}
+
+// Helper function to check if providers are configured
+export function checkProvidersStatus(): {
+  configured: string[];
+  missing: string[];
+  total: number;
+} {
+  const manager = getAIProviderManager();
+  const configured = manager.getProviderIds();
+  const allPossible = ['openai', 'anthropic', 'gemini', 'groq', 'mistral', 'perplexity'];
+  const missing = allPossible.filter(p => !configured.includes(p));
+  
+  return {
+    configured,
+    missing,
+    total: configured.length
+  };
+}
+
+// Export default manager functions for backward compatibility
+export default {
+  getProvider: (id: string) => getAIProviderManager().getProvider(id),
+  getAllProviders: () => getAIProviderManager().getAllProviders(),
+  getProviderIds: () => getAIProviderManager().getProviderIds(),
+  hasProvider: (id: string) => getAIProviderManager().hasProvider(id),
+  checkStatus: checkProvidersStatus
 };
