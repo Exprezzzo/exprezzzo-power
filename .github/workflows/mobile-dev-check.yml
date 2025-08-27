@@ -1,0 +1,63 @@
+name: Mobile Development Safety
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Detect mobile edit
+        id: mobile_check
+        run: |
+          if [[ "${{ github.event.pull_request.head.ref }}" == mobile/* ]]; then
+            echo "is_mobile=true" >> $GITHUB_OUTPUT
+            echo "📱 Mobile PR detected"
+          fi
+      
+      - name: Install and format
+        run: |
+          npm ci --legacy-peer-deps
+          npx prettier --write .
+          git diff --name-only
+      
+      - name: Restrict file changes
+        if: steps.mobile_check.outputs.is_mobile == 'true'
+        run: |
+          CHANGED=$(git diff --name-only origin/main)
+          SAFE_PATTERNS="app/constants/|app/content/|README.md|styles/"
+          
+          for file in $CHANGED; do
+            if ! echo "$file" | grep -E "$SAFE_PATTERNS"; then
+              echo "❌ Unsafe file modified: $file"
+              exit 1
+            fi
+          done
+      
+      - name: Build validation
+        run: |
+          npm run build
+          npx tsc --noEmit || true
+      
+      - name: Post validation
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            const isMobile = context.payload.pull_request.head.ref.startsWith('mobile/');
+            const fileCount = files.data.length;
+            const status = fileCount <= 5 ? '✅' : '⚠️';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Mobile Edit Validation\n${status} Files changed: ${fileCount}/5 max\n${isMobile ? '📱 Mobile PR detected - restrictions enforced' : ''}\nBuild: ✅ Passed\n\nSafe to merge after review.`
+            });

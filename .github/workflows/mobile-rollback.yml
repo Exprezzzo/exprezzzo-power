@@ -1,0 +1,29 @@
+name: Mobile Emergency Rollback
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type ROLLBACK to confirm'
+        required: true
+
+jobs:
+  rollback:
+    if: github.event.inputs.confirm == 'ROLLBACK'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 10
+          
+      - name: Find last stable
+        run: |
+          git checkout HEAD~1
+          
+      - name: Deploy stable version
+        run: |
+          vercel --prod --force --token ${{ secrets.VERCEL_TOKEN }}
+          
+      - name: Verify rollback
+        run: |
+          sleep 30
+          curl -f https://exprezzzo-power.vercel.app/api/health
