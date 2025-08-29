@@ -9,6 +9,17 @@
 }
 
 body {
-  background: #000;
-  color: #fff;
+  background: linear-gradient(to bottom right, #111827, #1e1b4b, #111827);
+  color: white;
+  min-height: 100vh;
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20;
+  }
+  
+  .glass-hover {
+    @apply hover:bg-white/20 transition-all duration-300;
+  }
 }
