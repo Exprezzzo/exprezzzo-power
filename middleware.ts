@@ -1,1 +1,37 @@
-import{NextResponse}from"next/server";import type{NextRequest}from"next/server";export function middleware(req:NextRequest){const path=req.nextUrl.pathname;if(path.startsWith("/admin")){const auth=req.cookies.get("auth-token");const admin=req.cookies.get("admin-claim");if(\!auth||admin?.value\!=="true"){console.log("[AUDIT]",{path,ip:req.ip,time:new Date().toISOString()});return NextResponse.redirect(new URL("/login",req.url));}}const ref=req.nextUrl.searchParams.get("ref");if(ref){const res=NextResponse.next();res.cookies.set("referral",ref,{maxAge:2592000,httpOnly:true,secure:true});return res;}return NextResponse.next();}export const config={matcher:["/admin/:path*","/((?\!_next/static|_next/image|favicon.ico).*)"]}
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+  
+  if (path.startsWith("/admin")) {
+    const auth = req.cookies.get("auth-token");
+    const admin = req.cookies.get("admin-claim");
+    
+    if (!auth || admin?.value !== "true") {
+      console.log("[AUDIT]", {
+        path,
+        ip: req.ip,
+        time: new Date().toISOString()
+      });
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+  
+  const ref = req.nextUrl.searchParams.get("ref");
+  if (ref) {
+    const res = NextResponse.next();
+    res.cookies.set("referral", ref, {
+      maxAge: 2592000,
+      httpOnly: true,
+      secure: true
+    });
+    return res;
+  }
+  
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/admin/:path*", "/((?!_next/static|_next/image|favicon.ico).*)"]
+};
