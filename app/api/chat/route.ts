@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { router } from "@/lib/providers/router";
 
 export async function POST(req: NextRequest) {
   const { prompt, model } = await req.json();
@@ -11,11 +12,10 @@ export async function POST(req: NextRequest) {
           encoder.encode(`event: start\ndata: ${JSON.stringify({ model, runId: Date.now() })}\n\n`)
         );
         
-        const tokens = prompt.split(" ");
-        for (const token of tokens) {
-          await new Promise(r => setTimeout(r, 100));
+        const generator = await router.route(model, prompt);
+        for await (const chunk of generator) {
           controller.enqueue(
-            encoder.encode(`event: token\ndata: ${JSON.stringify({ content: token + " " })}\n\n`)
+            encoder.encode(`event: token\ndata: ${JSON.stringify({ content: chunk.token })}\n\n`)
           );
         }
         
@@ -27,15 +27,14 @@ export async function POST(req: NextRequest) {
       } finally {
         controller.close();
       }
-    },
+    }
   });
   
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-      "X-Accel-Buffering": "no"
+      "Connection": "keep-alive"
     }
   });
 }

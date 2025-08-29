@@ -1,43 +1,36 @@
-import { ProviderAdapter } from "./base";
-import { OpenAIAdapter } from "./openai";
-import { DeepSeekAdapter } from "./deepseek";
+export interface ProviderAdapter {
+  id: string;
+  send: (prompt: string, ctx: { model: string; signal?: AbortSignal }) => AsyncGenerator<{ token: string }>;
+  estimateCost?: (i: number, o: number) => number;
+  requiresKyc?: boolean;
+}
 
 export class ProviderRouter {
   private providers = new Map<string, ProviderAdapter>();
-  private circuitBreakers = new Map<string, { failures: number; lastFail: number }>();
-  
-  constructor() {
-    this.providers.set("openai", new OpenAIAdapter());
-    this.providers.set("deepseek", new DeepSeekAdapter());
-  }
-  
-  async *route(model: string, prompt: string, fallbackChain: string[] = []): AsyncGenerator<{ token: string }> {
-    const provider = this.providers.get(model.split("/")[0]);
-    if (!provider) throw new Error(`Provider ${model} not found`);
+  private breakers = new Map<string, { failures: number; lastFail: number }>();
+
+  async *route(model: string, prompt: string, fallback: string[] = []): AsyncGenerator<{ token: string }> {
+    const providerId = model.split("/")[0];
+    const provider = this.providers.get(providerId);
     
-    const breaker = this.circuitBreakers.get(provider.id);
+    if (!provider) throw new Error(`Provider ${providerId} not found`);
+    
+    const breaker = this.breakers.get(providerId);
     if (breaker && breaker.failures >= 2 && Date.now() - breaker.lastFail < 300000) {
-      if (fallbackChain.length > 0) {
-        yield* this.route(fallbackChain[0], prompt, fallbackChain.slice(1));
-        return;
-      }
-      throw new Error("All providers failed");
+      if (fallback.length > 0) yield* this.route(fallback[0], prompt, fallback.slice(1));
+      else throw new Error("All providers failed");
     }
     
     try {
       yield* provider.send(prompt, { model });
     } catch (error) {
-      const current = this.circuitBreakers.get(provider.id) || { failures: 0, lastFail: 0 };
-      this.circuitBreakers.set(provider.id, {
-        failures: current.failures + 1,
+      this.breakers.set(providerId, {
+        failures: (this.breakers.get(providerId)?.failures || 0) + 1,
         lastFail: Date.now()
       });
       
-      if (fallbackChain.length > 0) {
-        yield* this.route(fallbackChain[0], prompt, fallbackChain.slice(1));
-      } else {
-        throw error;
-      }
+      if (fallback.length > 0) yield* this.route(fallback[0], prompt, fallback.slice(1));
+      else throw error;
     }
   }
 }

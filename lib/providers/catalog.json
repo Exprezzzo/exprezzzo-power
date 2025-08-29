@@ -1,0 +1,108 @@
+{
+  "providers": [
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "status": "available",
+      "models": [
+        {
+          "id": "gpt-4-turbo",
+          "caps": ["chat", "code"],
+          "price": {
+            "in": 0.01,
+            "out": 0.03,
+            "unit": "perMTok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "status": "available",
+      "models": [
+        {
+          "id": "claude-3-opus",
+          "caps": ["chat", "code", "vision"],
+          "price": {
+            "in": 0.015,
+            "out": 0.075,
+            "unit": "perMTok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "google",
+      "name": "Google Gemini",
+      "status": "available",
+      "models": [
+        {
+          "id": "gemini-pro",
+          "caps": ["chat", "vision"],
+          "price": {
+            "in": 0.00025,
+            "out": 0.0005,
+            "unit": "perMTok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "status": "available",
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "caps": ["chat", "code"],
+          "price": {
+            "in": 0.0001,
+            "out": 0.0002,
+            "unit": "perMTok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "xai",
+      "name": "xAI Grok",
+      "status": "coming"
+    },
+    {
+      "id": "azure",
+      "name": "Azure OpenAI",
+      "status": "coming"
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral",
+      "status": "coming"
+    },
+    {
+      "id": "cohere",
+      "name": "Cohere",
+      "status": "coming"
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "status": "coming"
+    },
+    {
+      "id": "together",
+      "name": "Together AI",
+      "status": "coming"
+    },
+    {
+      "id": "video-gcp",
+      "name": "Video Intelligence",
+      "status": "coming"
+    },
+    {
+      "id": "3d-gltf",
+      "name": "3D Generation",
+      "status": "coming"
+    }
+  ]
+}
