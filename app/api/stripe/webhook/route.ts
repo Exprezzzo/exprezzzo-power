@@ -3,11 +3,17 @@ import Stripe from 'stripe';
 
 export const runtime = 'nodejs';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
-});
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-06-20',
+    })
+  : null;
 
 export async function POST(req: NextRequest) {
+  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 });
+  }
+
   const rawBody = await req.text();
   const sig = req.headers.get('stripe-signature')!;
   
@@ -15,7 +21,7 @@ export async function POST(req: NextRequest) {
     const event = stripe.webhooks.constructEvent(
       rawBody,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET
     );
     
     // Handle the event

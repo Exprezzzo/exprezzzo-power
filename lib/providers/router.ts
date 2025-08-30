@@ -22,7 +22,7 @@ export class ProviderRouter {
   private providers: Map<string, ProviderAdapter> = new Map();
   private fallbackChain: string[] = [];
   private metrics: Map<string, { failures: number; lastFailure: Date }> = new Map();
-  private db = getFirestore();
+  private db = getApps().length ? getFirestore() : null;
   
   constructor() {
     // 🚀 Launch Now: Core providers
@@ -77,6 +77,7 @@ export class ProviderRouter {
   
   private async logSuccess(providerId: string, isSovereign: boolean = false) {
     try {
+      if (!this.db) return;
       await this.db.collection('provider_metrics').add({
         provider: providerId,
         status: 'success',
@@ -94,6 +95,7 @@ export class ProviderRouter {
       current.lastFailure = new Date();
       this.metrics.set(providerId, current);
       
+      if (!this.db) return;
       await this.db.collection('provider_metrics').add({
         provider: providerId,
         status: 'failure',
