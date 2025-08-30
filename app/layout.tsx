@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { inter, thnocentricFont } from './fonts';
 import { Providers } from './providers';
+import NavBar from '../components/navbar';
+import Footer from '../components/footer';
 import './globals.css';
 
 
@@ -17,7 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${thnocentricFont.variable} font-sans`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <NavBar />
+          <main>{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

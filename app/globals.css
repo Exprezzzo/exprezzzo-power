@@ -76,4 +76,96 @@
   .cta-button {
     @apply px-6 py-3 bg-gradient-to-r from-gold via-gold-dark to-gold-darker text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105;
   }
+
+  /* Dark theme shimmer animation */
+  .dark-shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .dark-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 215, 0, 0.1),
+      rgba(255, 215, 0, 0.2),
+      rgba(255, 215, 0, 0.1),
+      transparent
+    );
+    animation: shimmer 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes shimmer {
+    0% {
+      left: -100%;
+    }
+    50% {
+      left: 100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  /* Enhanced gradient shimmer for dark theme */
+  .gradient-shimmer {
+    background: linear-gradient(
+      270deg,
+      #2A1B14,
+      #3B2720,
+      #43302A,
+      #FFD700,
+      #FFB800,
+      #3B2720,
+      #2A1B14
+    );
+    background-size: 400% 400%;
+    animation: gradientShimmer 8s ease-in-out infinite;
+  }
+
+  @keyframes gradientShimmer {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Robin Hood themed loading animation */
+  .robin-hood-loading {
+    @apply relative;
+  }
+
+  .robin-hood-loading::after {
+    content: '🏹';
+    position: absolute;
+    top: 50%;
+    left: -2rem;
+    transform: translateY(-50%);
+    animation: arrowFly 2s ease-in-out infinite;
+  }
+
+  @keyframes arrowFly {
+    0% {
+      left: -2rem;
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      left: calc(100% + 1rem);
+      opacity: 0;
+    }
+  }
 }
