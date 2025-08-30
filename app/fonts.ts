@@ -1,8 +1,13 @@
-import localFont from 'next/font/local';
+import { Inter } from 'next/font/google';
 
-export const thnocentricFont = localFont({
-  src: '../public/fonts/thnocentric-rg.ttf',
-  variable: '--font-thnocentric',
-  display: 'swap',
-  fallback: ['system-ui', 'sans-serif'],
+export const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
 });
+
+// For now, we'll use system fonts for the brand font
+// until we have a proper font file
+export const thnocentricFont = {
+  variable: '--font-thnocentric',
+  className: 'font-mono' // fallback to monospace
+};

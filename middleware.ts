@@ -1,19 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-
-if (!getApps().length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT) 
-    : null;
-    
-  if (serviceAccount) {
-    initializeApp({
-      credential: cert(serviceAccount),
-    });
-  }
-}
 
 export async function middleware(request: NextRequest) {
   // Check if this is an admin route
@@ -25,21 +11,28 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     
+    // For production, verify token via API call instead of Firebase Admin SDK
     try {
-      const auth = getAuth();
-      const decodedToken = await auth.verifyIdToken(token);
-      
-      // Check for admin role in custom claims
-      if (decodedToken.role !== 'admin') {
+      const response = await fetch(`${request.nextUrl.origin}/api/verify-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
+
+      const { role, uid } = await response.json();
       
       // Allow access and add user info to headers
-      const response = NextResponse.next();
-      response.headers.set('x-user-id', decodedToken.uid);
-      response.headers.set('x-user-role', decodedToken.role || 'user');
+      const nextResponse = NextResponse.next();
+      nextResponse.headers.set('x-user-id', uid);
+      nextResponse.headers.set('x-user-role', role || 'user');
       
-      return response;
+      return nextResponse;
     } catch (error) {
       console.error('Auth verification failed:', error);
       return NextResponse.redirect(new URL('/login', request.url));

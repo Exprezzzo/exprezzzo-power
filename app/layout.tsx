@@ -1,13 +1,8 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { thnocentricFont } from './fonts';
+import { inter, thnocentricFont } from './fonts';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-inter',
-});
 
 export const metadata: Metadata = {
   title: 'EXPREZZZ Power',
