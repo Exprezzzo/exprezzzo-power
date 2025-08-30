@@ -1,11 +1,14 @@
 {
   "name": "exprezzzo-power",
-  "version": "4.1.0",
+  "version": "1.2.0",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "playwright test",
+    "test:lighthouse": "lhci autorun"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.60.0",
@@ -32,11 +35,14 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "recharts": "^2.15.4",
+    "resend": "^3.5.0",
     "stripe": "^17.7.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss": "^3.4.14"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.13.0",
+    "@playwright/test": "^1.45.0",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
