@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { thnocentric } from "./fonts/thnocentric-rg";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -18,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${thnocentric.variable} dark`}>
+    <html lang="en" className="dark">
       <body className={`${inter.className} bg-bgDark dark:bg-bgLight text-textDark dark:text-textLight`}>
         <nav className="fixed top-0 w-full z-50 bg-glass backdrop-blur-md border-b border-gray-800">
           <div className="container mx-auto px-6 py-4 flex justify-between items-center">
