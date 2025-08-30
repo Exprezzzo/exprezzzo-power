@@ -1,0 +1,14 @@
+[
+  {"id": "anthropic", "name": "Anthropic", "status": "available"},
+  {"id": "openai", "name": "OpenAI", "status": "available"},
+  {"id": "google", "name": "Google Gemini", "status": "available"},
+  {"id": "microsoft", "name": "Microsoft Azure OpenAI", "status": "available"},
+  {"id": "deepseek", "name": "DeepSeek", "status": "coming"},
+  {"id": "groq", "name": "Groq", "status": "coming"},
+  {"id": "xai", "name": "xAI/Grok", "status": "coming"},
+  {"id": "mistral", "name": "Mistral", "status": "coming"},
+  {"id": "cohere", "name": "Cohere", "status": "coming"},
+  {"id": "meta", "name": "Meta LLaMA", "status": "coming"},
+  {"id": "videoapi", "name": "Video API (TBD)", "status": "coming"},
+  {"id": "3dapi", "name": "3D API (TBD)", "status": "coming"}
+]

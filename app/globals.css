@@ -1,25 +1,33 @@
+:root {
+  --ep-gold-1: #FFD700;
+  --ep-gold-2: #B38F00;
+  --bg-dark: #0D0F12;
+  --surface-dark: #15181D;
+  --text-dark: #E6EAF0;
+  --bg-light: #F2F3F5;
+  --surface-light: #E6E8EC;
+  --text-light: #111316;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+.ep-gold-gradient {
+  background-image: linear-gradient(135deg, var(--ep-gold-1), var(--ep-gold-2));
 }
 
-body {
-  background: linear-gradient(to bottom right, #111827, #1e1b4b, #111827);
-  color: white;
-  min-height: 100vh;
+.glass {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl;
 }
 
-@layer utilities {
-  .glass {
-    @apply backdrop-blur-xl bg-white/10 border border-white/20;
-  }
-  
-  .glass-hover {
-    @apply hover:bg-white/20 transition-all duration-300;
+.glass-strong {
+  @apply bg-white/10 backdrop-blur-lg;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

@@ -1,0 +1,1 @@
+export default function LoginPage(){return(<div className="flex h-screen items-center justify-center bg-surfaceDark text-textDark"><div className="glass p-6 rounded-2xl"><h1 className="font-brand text-2xl mb-4">Express Power Login</h1><p className="text-sm opacity-70">Auth wiring coming soon...</p></div></div>);}
