@@ -2,16 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@layer base {
+  :root {
+    --bg1: #F5EBDD;
+    --bg2: #EADCCB;
+    --surface: rgba(255, 255, 255, 0.9);
+    --text-primary: #1C1A19;
+    --text-secondary: #6B625C;
+    --gold: #FFD700;
+    --gold-dark: #FFB800;
+    --gold-darker: #E6A600;
+  }
 
-body {
-  background: linear-gradient(to bottom right, #111827, #1e1b4b, #111827);
-  color: white;
-  min-height: 100vh;
+  .dark {
+    --bg1: #2A1B14;
+    --bg2: #3B2720;
+    --surface: #43302A;
+    --text-primary: #F5F3F1;
+    --text-secondary: #C4B8B1;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-gradient-to-br from-[var(--bg1)] to-[var(--bg2)] text-[var(--text-primary)] min-h-screen;
+  }
+
+  .surface {
+    @apply bg-[var(--surface)] backdrop-blur-sm;
+  }
+
+  .text-muted {
+    @apply text-[var(--text-secondary)];
+  }
+
+  .gold-gradient {
+    @apply bg-gradient-to-r from-gold via-gold-dark to-gold-darker;
+  }
+
+  .gold-gradient-text {
+    @apply bg-gradient-to-r from-gold via-gold-dark to-gold-darker bg-clip-text text-transparent;
+  }
+
+  .brand-font {
+    font-family: var(--font-thnocentric), system-ui, sans-serif;
+  }
 }
 
 @layer utilities {
@@ -21,5 +60,20 @@ body {
   
   .glass-hover {
     @apply hover:bg-white/20 transition-all duration-300;
+  }
+}
+
+@layer components {
+  .power-tier-card {
+    @apply relative overflow-hidden;
+  }
+  
+  .power-tier-card::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-gold via-gold-dark to-gold-darker opacity-10;
+  }
+
+  .cta-button {
+    @apply px-6 py-3 bg-gradient-to-r from-gold via-gold-dark to-gold-darker text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105;
   }
 }
