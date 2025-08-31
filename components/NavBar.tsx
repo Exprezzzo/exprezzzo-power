@@ -12,6 +12,7 @@ export default function NavBar({ isAdmin }: { isAdmin?: boolean }) {
   
   const navLinks = [
     { href: '/chat', label: 'Chat' },
+    { href: '/playground', label: 'Playground' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/models', label: 'Models' },
     { href: '/referrals', label: 'Referrals' },
