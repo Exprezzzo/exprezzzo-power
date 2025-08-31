@@ -23,3 +23,23 @@ body {
     @apply hover:bg-white/20 transition-all duration-300;
   }
 }
+
+/* EP-CLR06: Metallic Gold Shimmer Overlay */
+html[data-theme='dark'] body::after {
+  content: '';
+  position: fixed; 
+  inset: 0; 
+  pointer-events: none; 
+  mix-blend-mode: screen; 
+  opacity: .06;
+  background: radial-gradient(1200px 600px at 20% 10%, rgba(255,215,0,.15), transparent),
+              radial-gradient(900px 500px at 80% 90%, rgba(230,166,0,.12), transparent);
+  z-index: 1;
+}
+
+/* Vegas gold variables */
+:root {
+  --vegas-gold-standard: #FFD700;
+  --vegas-gold-neon: #FFA500;
+  --vegas-purple-dark: #4B0082;
+}
