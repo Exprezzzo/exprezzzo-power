@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { allow } from '@/lib/ratelimit';
 import { logRun } from '@/lib/persistence';
 
+export const runtime = 'nodejs'
+
 // Provider configurations
 const AI_PROVIDERS = {
   openai: {

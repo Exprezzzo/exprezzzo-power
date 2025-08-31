@@ -22,7 +22,9 @@ const nextConfig = {
     ];
   },
   experimental: {
-    serverActions: true,
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'exprezzzo-power.vercel.app']
+    },
   },
   images: {
     domains: ['api.dicebear.com', 'avatars.githubusercontent.com'],

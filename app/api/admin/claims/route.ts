@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/auth/admin';
 
+export const runtime = 'nodejs'
+
 export async function POST(req: NextRequest) {
   const caller = req.cookies.get('ep_session')?.value;
   if (!caller) return NextResponse.json({ error: 'unauth' }, { status: 401 });
