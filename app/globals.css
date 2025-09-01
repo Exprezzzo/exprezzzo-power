@@ -2,57 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/* EXPREZZZ POWER - Vegas Gold Theme Restoration */
+:root {
+  /* Dark Chocolate with Shimmer */
+  --bg-dark: #2C1810;
+  --bg-dark-secondary: #3E2723;
+  --bg-gradient: linear-gradient(135deg, #2C1810 0%, #3E2723 50%, #2C1810 100%);
+  
+  /* Perfect Gold from Build 0b48736 */
+  --gold-primary: #FFD700;
+  --gold-neon: #FFA500;
+  --gold-button: linear-gradient(90deg, #FFD700, #FFA500);
+  
+  /* Legacy support */
+  --bg1: #2C1810;
+  --bg2: #3E2723;
+  --surface: rgba(46, 24, 16, 0.9);
+  --text-primary: #FFFFFF;
+  --text-secondary: #FFE0B2;
+  --gold: #FFD700;
+  --gold-dark: #FFA500;
+  --gold-darker: #E6A600;
+}
+
+[data-theme='dark'],
+.dark {
+  --bg1: #2C1810;
+  --bg2: #3E2723;
+  --surface: #43302A;
+  --text-primary: #F5F3F1;
+  --text-secondary: #C4B8B1;
+}
+
 @layer base {
-  :root {
-    --bg1: #F5EBDD;
-    --bg2: #EADCCB;
-    --surface: rgba(255, 255, 255, 0.9);
-    --text-primary: #1C1A19;
-    --text-secondary: #6B625C;
-    --gold: #FFD700;
-    --gold-dark: #FFB800;
-    --gold-darker: #E6A600;
-  }
 
-  [data-theme='dark'],
-  .dark {
-    --bg1: #2A1B14;
-    --bg2: #3B2720;
-    --surface: #43302A;
-    --text-primary: #F5F3F1;
-    --text-secondary: #C4B8B1;
-  }
-
-  /* Base body with shimmer gradient */
+  /* Vegas Gold Chocolate Body */
   body {
     @apply text-[var(--text-primary)] min-h-screen;
-    background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg1) 100%);
-    background-attachment: fixed;
-    background-size: 400% 400%;
-    animation: shimmer 20s ease infinite;
+    background: var(--bg-gradient);
+    position: relative;
   }
 
-  /* Dark theme shimmer gradient */
-  html[data-theme='dark'] body {
-    background: linear-gradient(135deg, #2A1B14 0%, #3B2720 50%, #2A1B14 100%);
-    background-attachment: fixed;
-    background-size: cover;
-  }
-
-  /* Optional metallic shimmer overlay */
-  html[data-theme='dark'] body::after {
+  /* Enhanced Metallic Shimmer Effect */
+  body::after {
     content: '';
     position: fixed;
     inset: 0;
-    pointer-events: none;
-    opacity: 0.04;
-    background-image: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 10px,
-      rgba(255, 215, 0, 0.02) 10px,
-      rgba(255, 215, 0, 0.02) 20px
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255, 215, 0, 0.03) 35%,
+      rgba(255, 215, 0, 0.05) 40%,
+      transparent 45%,
+      transparent 55%,
+      rgba(255, 215, 0, 0.03) 60%,
+      rgba(255, 215, 0, 0.05) 65%,
+      transparent 70%
     );
+    pointer-events: none;
+    mix-blend-mode: screen;
+    animation: shimmer-sweep 8s ease-in-out infinite;
+    z-index: 1;
+  }
+
+  /* Ensure content is above shimmer */
+  #__next, main, .main-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  @keyframes shimmer-sweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
   }
 
   @keyframes shimmer {
@@ -96,5 +117,21 @@
     @apply px-6 py-3 bg-gradient-to-r from-gold via-gold-dark to-gold-darker 
            text-black font-bold rounded-lg shadow-lg hover:shadow-xl 
            transition-all duration-300 hover:scale-105;
+  }
+
+  /* Enhanced Button Styles */
+  .btn-gold {
+    background: var(--gold-button);
+    color: var(--bg-dark);
+    font-weight: 600;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(255, 215, 0, 0.2);
+  }
+
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);
   }
 }

@@ -1,39 +1,14 @@
-'use client';
-
-import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
-
-export default function ReferralsPage() {
-  const [copied, setCopied] = useState(false);
-  const referralCode = 'POWER123';
-  const referralUrl = `https://exprezzzo-power.vercel.app/?ref=${referralCode}`;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
+export default function Page() {
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="font-brand text-3xl gold-gradient-text mb-6">Referrals</h1>
-      
-      <div className="surface rounded-xl p-8">
-        <h2 className="font-brand text-xl mb-4">Your Referral Link</h2>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={referralUrl}
-            readOnly
-            className="flex-1 p-3 rounded-lg bg-transparent border border-gold/20"
-          />
-          <button
-            onClick={copyToClipboard}
-            className="cta-button flex items-center gap-2"
-          >
-            {copied ? <Check size={20} /> : <Copy size={20} />}
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+    <div className="min-h-screen p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#FFD700] to-[#FFA500] bg-clip-text text-transparent mb-8 text-center">
+          Coming Soon
+        </h1>
+        <div className="bg-[var(--surface)] rounded-xl p-8 backdrop-blur-sm border border-[#FFD700]/20">
+          <p className="text-white/80 text-lg text-center">
+            This feature is under development and will be available soon.
+          </p>
         </div>
       </div>
     </div>
