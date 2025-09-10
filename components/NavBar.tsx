@@ -24,8 +24,21 @@ export default function NavBar({ isAdmin }: { isAdmin?: boolean }) {
 
   return (
     <nav className="flex items-center justify-between px-6 py-3 surface border-b border-gold/20 sticky top-0 z-50">
-      <Link href="/" className="text-xl font-bold font-brand gold-gradient-text hover:opacity-80">
-        EXPREZZZ POWER
+      <Link href="/" className="flex items-center gap-2 text-xl font-bold font-brand gold-gradient-text hover:opacity-80">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="text-vegas-gold"
+        >
+          <path
+            d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"
+            fill="currentColor"
+          />
+        </svg>
+        Exprezzz Power
       </Link>
       
       <div className="hidden md:flex items-center gap-4">

@@ -12,8 +12,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'EXPREZZZ Power - 40% Cheaper AI',
+  title: 'Exprezzz Power - 40% Cheaper AI',
   description: 'Compare AI models, APIs, and prices. No lock-in. Always the best deal.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: '/site.webmanifest',
+  themeColor: '#CFB53B',
+  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({

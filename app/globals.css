@@ -2,27 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-/* EXPREZZZ POWER - Vegas Gold Theme Restoration */
+/* RG Font - Placeholder for brand font when available */
+@font-face {
+  font-family: 'RG';
+  src: url('/fonts/RG-Regular.woff2') format('woff2'),
+       url('/fonts/RG-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'RG';
+  src: url('/fonts/RG-Bold.woff2') format('woff2'),
+       url('/fonts/RG-Bold.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* EXPREZZZ POWER - Vegas Gold Theme v1.5.1 */
 :root {
-  /* Dark Chocolate with Shimmer */
+  /* Vegas Gold Brand Colors */
+  --vegas-gold: #CFB53B;
+  --vegas-gold-light: #E6CC5B;
+  --vegas-gold-dark: #B8A234;
+  
+  /* Chocolate Shimmer Background */
   --bg-dark: #2C1810;
   --bg-dark-secondary: #3E2723;
   --bg-gradient: linear-gradient(135deg, #2C1810 0%, #3E2723 50%, #2C1810 100%);
   
-  /* Perfect Gold from Build 0b48736 */
-  --gold-primary: #FFD700;
-  --gold-neon: #FFA500;
-  --gold-button: linear-gradient(90deg, #FFD700, #FFA500);
+  /* Desert Sand Accents */
+  --desert-sand: #EADCCB;
+  --desert-sand-dark: #F5EBDD;
+  
+  /* Button Gradients */
+  --gold-button: linear-gradient(90deg, #CFB53B, #B8A234);
+  --gold-shimmer: linear-gradient(90deg, #CFB53B, #E6CC5B, #CFB53B);
   
   /* Legacy support */
   --bg1: #2C1810;
   --bg2: #3E2723;
   --surface: rgba(46, 24, 16, 0.9);
   --text-primary: #FFFFFF;
-  --text-secondary: #FFE0B2;
-  --gold: #FFD700;
-  --gold-dark: #FFA500;
-  --gold-darker: #E6A600;
+  --text-secondary: #EADCCB;
+  --gold: #CFB53B;
+  --gold-dark: #B8A234;
+  --gold-darker: #A69729;
 }
 
 [data-theme='dark'],
@@ -43,7 +70,7 @@
     position: relative;
   }
 
-  /* Enhanced Metallic Shimmer Effect */
+  /* Vegas Gold Shimmer Effect (8s) */
   body::after {
     content: '';
     position: fixed;
@@ -51,12 +78,12 @@
     background: linear-gradient(
       120deg,
       transparent 30%,
-      rgba(255, 215, 0, 0.03) 35%,
-      rgba(255, 215, 0, 0.05) 40%,
+      rgba(207, 181, 59, 0.03) 35%,
+      rgba(207, 181, 59, 0.05) 40%,
       transparent 45%,
       transparent 55%,
-      rgba(255, 215, 0, 0.03) 60%,
-      rgba(255, 215, 0, 0.05) 65%,
+      rgba(207, 181, 59, 0.03) 60%,
+      rgba(207, 181, 59, 0.05) 65%,
       transparent 70%
     );
     pointer-events: none;
@@ -114,12 +141,19 @@
   }
 
   .cta-button {
-    @apply px-6 py-3 bg-gradient-to-r from-gold via-gold-dark to-gold-darker 
-           text-black font-bold rounded-lg shadow-lg hover:shadow-xl 
+    @apply px-6 py-3 text-black font-bold rounded-lg shadow-lg hover:shadow-xl 
            transition-all duration-300 hover:scale-105;
+    background: var(--gold-button);
+    box-shadow: 0 4px 12px rgba(207, 181, 59, 0.3);
   }
 
-  /* Enhanced Button Styles */
+  .cta-button:hover {
+    background: var(--gold-shimmer);
+    box-shadow: 0 6px 20px rgba(207, 181, 59, 0.4);
+    transform: translateY(-2px) scale(1.05);
+  }
+
+  /* Enhanced Vegas Gold Button Styles */
   .btn-gold {
     background: var(--gold-button);
     color: var(--bg-dark);
@@ -127,11 +161,27 @@
     padding: 0.75rem 2rem;
     border-radius: 0.5rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(255, 215, 0, 0.2);
+    box-shadow: 0 4px 6px rgba(207, 181, 59, 0.2);
+    border: none;
+    cursor: pointer;
   }
 
   .btn-gold:hover {
+    background: var(--gold-shimmer);
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 6px 16px rgba(207, 181, 59, 0.4);
+  }
+
+  .btn-vegas-gold {
+    @apply px-6 py-3 font-semibold rounded-lg transition-all duration-300;
+    background: linear-gradient(135deg, #CFB53B 0%, #E6CC5B 50%, #B8A234 100%);
+    color: #2C1810;
+    box-shadow: 0 4px 12px rgba(207, 181, 59, 0.25);
+  }
+
+  .btn-vegas-gold:hover {
+    background: linear-gradient(135deg, #E6CC5B 0%, #CFB53B 50%, #CFB53B 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(207, 181, 59, 0.35);
   }
 }
