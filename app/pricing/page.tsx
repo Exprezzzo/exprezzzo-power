@@ -15,7 +15,7 @@ const pricingPlans = [
       'Email support',
       'Basic analytics',
     ],
-    priceId: 'price_monthly_49',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID || 'price_monthly_49',
     popular: false,
   },
   {
@@ -31,7 +31,7 @@ const pricingPlans = [
       'Advanced analytics',
       'Early access to new features',
     ],
-    priceId: 'price_yearly_399',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID || 'price_yearly_399',
     popular: true,
   },
 ];
