@@ -1,0 +1,2 @@
+High-severity deps fixed: glob v9, rimraf v4
+ESLint deprecations deferred to v1.4
