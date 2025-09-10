@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, Users, Settings } from 'lucide-react';
+import RoundtablePanel from '@/components/RoundtablePanel';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Array<{role: string; content: string}>>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [roundtableMode, setRoundtableMode] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('gpt-4-turbo');
+  const [lastPrompt, setLastPrompt] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,55 +18,72 @@ export default function ChatPage() {
 
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
+    setLastPrompt(input);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const endpoint = roundtableMode ? '/api/chat/protected' : '/api/chat';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: input,
+          model: selectedModel,
+          roundtable: roundtableMode,
           messages: [...messages, userMessage]
         })
       });
 
-      if (!response.ok) throw new Error('Chat failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Chat failed');
+      }
       
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = { role: 'assistant', content: '' };
-      
-      if (reader) {
-        setMessages(prev => [...prev, assistantMessage]);
+      if (roundtableMode) {
+        // Handle roundtable response
+        const data = await response.json();
+        setMessages(prev => [...prev, { 
+          role: 'roundtable', 
+          content: JSON.stringify(data) // This will be handled by RoundtablePanel
+        }]);
+      } else {
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let assistantMessage = { role: 'assistant', content: '' };
         
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        if (reader) {
+          setMessages(prev => [...prev, assistantMessage]);
           
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-              const content = line.slice(6);
-              if (content && content !== '') {
-                assistantMessage.content += content;
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = {...assistantMessage};
-                  return updated;
-                });
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+                const content = line.slice(6);
+                if (content && content !== '') {
+                  assistantMessage.content += content;
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    updated[updated.length - 1] = {...assistantMessage};
+                    return updated;
+                  });
+                }
               }
             }
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again.' 
+        content: error.message || 'Sorry, I encountered an error. Please try again.' 
       }]);
     } finally {
       setIsLoading(false);
