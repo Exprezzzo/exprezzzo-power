@@ -86,7 +86,7 @@ export default function DashboardPage() {
           <h1 className="text-4xl font-bold gold-gradient-text mb-2">
             Welcome back, {profile.displayName}!
           </h1>
-          <p className="text-muted">Here's your Exprezzz Power dashboard overview</p>
+          <p className="text-muted">Here&apos;s your Exprezzz Power dashboard overview</p>
         </div>
 
         {/* Quick Stats */}

@@ -64,7 +64,7 @@ export default function PricingPage() {
             Choose Your Power Level
           </h1>
           <p className="text-xl text-muted max-w-2xl mx-auto">
-            Access the world's most powerful AI models at 40% less cost. 
+            Access the world&apos;s most powerful AI models at 40% less cost. 
             No lock-ins, just pure performance.
           </p>
         </div>

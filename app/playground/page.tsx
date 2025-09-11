@@ -5,11 +5,12 @@ import {
   Send, Save, Download, Upload, Trash2, Settings, 
   Copy, RefreshCw, Zap, Brain, MessageSquare, Key,
   Moon, Sun, History, Plus, X, Check, AlertCircle,
-  Mic, Volume2
+  Mic, Volume2, Users
 } from 'lucide-react';
 import { VoiceInput } from '@/components/voice/VoiceInput';
 import { VoiceOutput } from '@/components/voice/VoiceOutput';
 import { FEATURES } from '@/lib/features';
+import RoundtablePanel from '@/components/RoundtablePanel';
 
 // Types
 interface Message {
@@ -54,6 +55,8 @@ export default function PlaygroundPage() {
   const [darkMode, setDarkMode] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [totalCost, setTotalCost] = useState(0);
+  const [roundtableMode, setRoundtableMode] = useState(false);
+  const [lastPrompt, setLastPrompt] = useState('');
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -72,66 +75,82 @@ export default function PlaygroundPage() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setLastPrompt(input.trim());
     setInput('');
     setIsStreaming(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const endpoint = roundtableMode ? '/api/chat/protected' : '/api/chat';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: input.trim(),
+          model: selectedModel,
+          roundtable: roundtableMode,
           messages: [...messages, userMessage]
         }),
       });
 
       if (!response.ok) throw new Error('Chat request failed');
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = '';
+      if (roundtableMode) {
+        // Handle roundtable response
+        const data = await response.json();
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(),
+          role: 'assistant', 
+          content: JSON.stringify(data), // This will be handled by RoundtablePanel
+          timestamp: new Date()
+        }]);
+      } else {
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let assistantMessage = '';
 
-      const assistantId = Date.now().toString();
-      
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const assistantId = Date.now().toString();
         
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ') && !line.includes('[DONE]')) {
-            const content = line.slice(6);
-            if (content && content !== '') {
-              assistantMessage += content;
-              setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                
-                if (lastMessage?.role === 'assistant' && lastMessage.id === assistantId) {
-                  lastMessage.content = assistantMessage;
-                } else {
-                  newMessages.push({
-                    id: assistantId,
-                    role: 'assistant',
-                    content: assistantMessage,
-                    model: selectedModel,
-                    timestamp: new Date(),
-                    tokens: Math.ceil(assistantMessage.length / 4),
-                    cost: (Math.ceil(assistantMessage.length / 4) / 1000) * (MODELS.find(m => m.id === selectedModel)?.costPer1k || 0)
-                  });
-                }
-                
-                return newMessages;
-              });
+        while (reader) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ') && !line.includes('[DONE]')) {
+              const content = line.slice(6);
+              if (content && content !== '') {
+                assistantMessage += content;
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  const lastMessage = newMessages[newMessages.length - 1];
+                  
+                  if (lastMessage?.role === 'assistant' && lastMessage.id === assistantId) {
+                    lastMessage.content = assistantMessage;
+                  } else {
+                    newMessages.push({
+                      id: assistantId,
+                      role: 'assistant',
+                      content: assistantMessage,
+                      model: selectedModel,
+                      timestamp: new Date(),
+                      tokens: Math.ceil(assistantMessage.length / 4),
+                      cost: (Math.ceil(assistantMessage.length / 4) / 1000) * (MODELS.find(m => m.id === selectedModel)?.costPer1k || 0)
+                    });
+                  }
+                  
+                  return newMessages;
+                });
+              }
             }
           }
         }
+        
+        const finalCost = (Math.ceil(assistantMessage.length / 4) / 1000) * (MODELS.find(m => m.id === selectedModel)?.costPer1k || 0);
+        setTotalCost(prev => prev + finalCost);
       }
-      
-      const finalCost = (Math.ceil(assistantMessage.length / 4) / 1000) * (MODELS.find(m => m.id === selectedModel)?.costPer1k || 0);
-      setTotalCost(prev => prev + finalCost);
       
     } catch (error) {
       console.error('Chat error:', error);
@@ -178,17 +197,30 @@ export default function PlaygroundPage() {
             <div className="flex items-center gap-4">
               <Brain className="w-6 h-6 text-gold" />
               <h1 className="text-xl font-bold">AI Playground</h1>
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className={`px-3 py-1.5 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'} focus:outline-none focus:ring-2 focus:ring-gold`}
+              {!roundtableMode && (
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className={`px-3 py-1.5 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-100'} focus:outline-none focus:ring-2 focus:ring-gold`}
+                >
+                  {MODELS.map(model => (
+                    <option key={model.id} value={model.id}>
+                      {model.icon} {model.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                onClick={() => setRoundtableMode(!roundtableMode)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
+                  roundtableMode 
+                    ? 'bg-vegas-gold text-bg-dark' 
+                    : 'bg-gray-800 text-white hover:bg-gray-700'
+                }`}
               >
-                {MODELS.map(model => (
-                  <option key={model.id} value={model.id}>
-                    {model.icon} {model.name}
-                  </option>
-                ))}
-              </select>
+                <Users className="w-4 h-4" />
+                {roundtableMode ? 'Single Model' : 'Roundtable'}
+              </button>
             </div>
             
             <div className="flex items-center gap-2">
@@ -266,56 +298,78 @@ export default function PlaygroundPage() {
             </div>
           ) : (
             <div className="space-y-4 max-w-4xl mx-auto">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-3xl rounded-lg px-4 py-3 ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-gold to-gold-dark text-black'
-                        : message.content.startsWith('Error:')
-                        ? 'bg-red-600 text-white'
-                        : darkMode
-                        ? 'bg-gray-800 border border-gray-700'
-                        : 'bg-white border border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="text-xs opacity-70 mb-1 flex items-center gap-2">
-                          {message.role === 'assistant' && message.model && (
-                            <span>{MODELS.find(m => m.id === message.model)?.icon} {message.model}</span>
-                          )}
-                          <span>{message.timestamp.toLocaleTimeString()}</span>
-                        </div>
-                        <div className="whitespace-pre-wrap">{message.content}</div>
-                        {message.tokens && (
-                          <div className="text-xs opacity-70 mt-2">
-                            {message.tokens} tokens • ${message.cost?.toFixed(4) || '0.0000'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {message.role === 'assistant' && FEATURES.voice && (
-                          <VoiceOutput 
-                            text={message.content} 
-                            voice="nova"
-                            provider="openai"
+              {messages.map((message) => {
+                // Check if this is a roundtable response
+                if (message.role === 'assistant' && message.content.startsWith('{')) {
+                  try {
+                    const roundtableData = JSON.parse(message.content);
+                    if (roundtableData.models && Array.isArray(roundtableData.models)) {
+                      return (
+                        <div key={message.id} className="w-full">
+                          <RoundtablePanel
+                            prompt={lastPrompt}
+                            models={roundtableData.models}
+                            onRetry={() => sendMessage()}
                           />
-                        )}
-                        <button
-                          onClick={() => copyMessage(message.content)}
-                          className="p-1.5 hover:bg-gray-600 rounded opacity-70 hover:opacity-100"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
+                        </div>
+                      );
+                    }
+                  } catch (e) {
+                    // Not JSON, render as normal message
+                  }
+                }
+
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-3xl rounded-lg px-4 py-3 ${
+                        message.role === 'user'
+                          ? 'bg-gradient-to-r from-gold to-gold-dark text-black'
+                          : message.content.startsWith('Error:')
+                          ? 'bg-red-600 text-white'
+                          : darkMode
+                          ? 'bg-gray-800 border border-gray-700'
+                          : 'bg-white border border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="text-xs opacity-70 mb-1 flex items-center gap-2">
+                            {message.role === 'assistant' && message.model && (
+                              <span>{MODELS.find(m => m.id === message.model)?.icon} {message.model}</span>
+                            )}
+                            <span>{message.timestamp.toLocaleTimeString()}</span>
+                          </div>
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                          {message.tokens && (
+                            <div className="text-xs opacity-70 mt-2">
+                              {message.tokens} tokens • ${message.cost?.toFixed(4) || '0.0000'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {message.role === 'assistant' && FEATURES.voice && (
+                            <VoiceOutput 
+                              text={message.content} 
+                              voice="nova"
+                              provider="openai"
+                            />
+                          )}
+                          <button
+                            onClick={() => copyMessage(message.content)}
+                            className="p-1.5 hover:bg-gray-600 rounded opacity-70 hover:opacity-100"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {isStreaming && (
                 <div className="flex justify-start">
                   <div className={`rounded-lg px-4 py-3 ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
